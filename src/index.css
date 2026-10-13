@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", 'Plus Jakarta Sans', sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'JetBrains Mono', monospace;
+
+    /* Apple iOS Light Tokens */
+    --ios-bg: #F2F2F7;
+    --ios-card: #FFFFFF;
+    --ios-secondary: #E5E5EA;
+    --ios-tertiary: #D1D1D6;
+    --ios-border: #E5E5EA;
+    --ios-separator: #C6C6C8;
+    --ios-text: #000000;
+    --ios-subtext: #6C6C70;
+    --ios-blue: #007AFF;
+    --ios-green: #34C759;
+    --ios-red: #FF3B30;
+    --ios-orange: #FF9500;
+  }
+
+  .dark {
+    /* Apple iOS Dark Tokens (True OLED Black) */
+    --ios-bg: #000000;
+    --ios-card: #1C1C1E;
+    --ios-secondary: #2C2C2E;
+    --ios-tertiary: #3A3A3C;
+    --ios-border: #2C2C2E;
+    --ios-separator: #38383A;
+    --ios-text: #FFFFFF;
+    --ios-subtext: #8E8E93;
+    --ios-blue: #0A84FF;
+    --ios-green: #30D158;
+    --ios-red: #FF453A;
+    --ios-orange: #FF9F0A;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.015em;
+    background-color: var(--ios-bg);
+    color: var(--ios-text);
+  }
+}
+
+/* iOS OLED Dark & Apple Porcelain Light Themes */
+html.dark {
+  background-color: #000000;
+  color: #FFFFFF;
+}
+
+html:not(.dark) {
+  background-color: #F2F2F7;
+  color: #1C1C1E;
+}
+
+/* Apple iOS Glass Utility */
+.ios-glass {
+  background-color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.dark .ios-glass {
+  background-color: rgba(28, 28, 30, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Apple iOS Inset Grouped Card Shadow */
+.ios-card-shadow {
+  box-shadow: 0 2px 14px 0 rgba(0, 0, 0, 0.04);
+}
+
+.dark .ios-card-shadow {
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* Custom smooth iOS scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(142, 142, 147, 0.35);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(142, 142, 147, 0.55);
+}
+
+/* Print styling for PDF receipts */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .receipt-printable {
+    box-shadow: none !important;
+    border: 1px solid #E5E5EA !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 1rem !important;
+  }
+}

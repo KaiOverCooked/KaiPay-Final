@@ -1,0 +1,6 @@
+{
+  "summary": "Rencana implementasi penyempurnaan menyeluruh KaiPay:\n1. Dynamic Island interaktif & expandable saat transaksi/aktivitas berjalan\n2. Kartu virtual Kai Card 3D dengan efek rotasi giroskop, kemilau holografik, dan flip card detail nomor kartu\n3. Animasi Face ID 3D autentikasi mesh dengan suara shutter/kamera & chime sukses\n4. Pemindai QRIS disempurnakan dengan mode zoom 1x & 2x, riwayat pemindaian tersimpan otomatis dengan cap waktu lengkap, serta fitur Split Bill bagi tagihan dengan teman kontak\n5. Audio sintetis autentik Apple Pay (\"chime ding-ding\") saat transaksi berhasil\n6. Unduh struk transaksi digital resolusi tinggi (HD image PNG) siap simpan ke galeri foto",
+  "updatedAt": "2026-10-13T20:02:03.629918335Z",
+  "requestFeedback": true,
+  "userFacing": true
+}
