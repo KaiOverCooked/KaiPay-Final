@@ -2,5 +2,7 @@
   "name": "KaiPay — Elegant Monochrome Digital Banking",
   "description": "Aplikasi dompet digital & perbankan simulasi bergaya DANA dengan tema monokrom elegan iOS, transfer saldo virtual, QRIS/KaiPay QR scanner & generator, analitik pengeluaran, manajemen pagu anggaran, serta autentikasi biometrik.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
