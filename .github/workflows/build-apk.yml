@@ -57,10 +57,10 @@ jobs:
           "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Install project dependencies
-        run: npm install --package-lock=false
+        run: npm install --package-lock=false --legacy-peer-deps
 
       - name: Install Capacitor for this build only
-        run: npm install --no-save --package-lock=false @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+        run: npm install --no-save --package-lock=false --legacy-peer-deps esbuild@^0.28.0 @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
 
       - name: Build the existing web app
         run: npm run build
