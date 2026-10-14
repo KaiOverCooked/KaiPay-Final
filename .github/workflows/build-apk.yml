@@ -33,7 +33,10 @@ jobs:
         with:
           cmdline-tools-version: "12266719"
           accept-android-sdk-licenses: true
-          packages: "platform-tools, platforms;android-35, build-tools;35.0.0"
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Install project dependencies
         run: npm install --package-lock=false
@@ -54,12 +57,12 @@ jobs:
           }
           EOF
 
-      - name: Generate Android wrapper and sync web assets
+      - name: Generate Android project and Gradle wrapper
         run: |
           npx cap add android
           npx cap sync android
 
-      - name: Build debug APK
+      - name: Build debug APK using generated Gradle wrapper
         run: |
           cd android
           chmod +x gradlew
