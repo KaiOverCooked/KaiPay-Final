@@ -1,0 +1,9 @@
+{
+  "appId": "com.kaipay.app",
+  "appName": "KaiPay",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

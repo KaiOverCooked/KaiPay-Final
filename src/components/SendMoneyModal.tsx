@@ -537,9 +537,9 @@ export const SendMoneyModal: React.FC<SendMoneyModalProps> = ({
                       whileTap={iosQuickTap}
                       type="button"
                       onClick={handleBiometricAuth}
-                      disabled={isAuthenticating}
-                      className={`w-24 h-24 rounded-full bg-[#007AFF] text-white flex items-center justify-center shadow-2xl transition-all ring-4 ring-[#007AFF]/25 ${
-                        isAuthenticating ? 'scale-95 animate-pulse' : 'hover:scale-105'
+                      disabled={isFaceIdOpen}
+                      className={`w-24 h-24 rounded-full bg-ios-accent text-white flex items-center justify-center shadow-2xl transition-all ring-4 ring-ios-accent/25 ${
+                        isFaceIdOpen ? 'scale-95 animate-pulse' : 'hover:scale-105'
                       }`}
                       aria-label="Pindai Touch ID atau Face ID"
                     >
@@ -548,7 +548,7 @@ export const SendMoneyModal: React.FC<SendMoneyModalProps> = ({
 
                     <div>
                       <p className="text-sm font-semibold text-[#000000] dark:text-[#FFFFFF]">
-                        {isAuthenticating ? 'Memverifikasi Apple Biometrik...' : 'Sentuh sensor atau Face ID'}
+                        {isFaceIdOpen ? 'Memverifikasi Apple Biometrik...' : 'Sentuh sensor atau Face ID'}
                       </p>
                       <p className="text-xs text-[#8E8E93] mt-1">
                         Ketuk ikon di atas untuk menyetujui transaksi via Secure Enclave

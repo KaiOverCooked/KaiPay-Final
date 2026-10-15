@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">KaiPay</string>
+    <string name="title_activity_main">KaiPay</string>
+    <string name="package_name">com.kaipay.app</string>
+    <string name="custom_url_scheme">com.kaipay.app</string>
+</resources>

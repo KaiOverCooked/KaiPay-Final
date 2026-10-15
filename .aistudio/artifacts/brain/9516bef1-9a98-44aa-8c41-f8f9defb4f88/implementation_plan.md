@@ -1,76 +1,119 @@
-# Rencana Implementasi: Penyempurnaan Fitur & Pengalaman Pengguna KaiPay iOS
+# Rencana Implementasi: Perbaikan & Penyempurnaan UI Estetik, Kai Card 3D Gesture, Fitur Teman, dan Build APK Android
 
-Berikut adalah rencana terstruktur untuk merealisasikan seluruh penyempurnaan yang telah dipilih:
-
----
-
-## 1. Dynamic Island Interaktif & Dapat Diekspansi (Expandable Live Activity)
-- **Komponen**: `src/components/DynamicIsland.tsx` (menggantikan/menyempurnakan `ToastBanner.tsx`).
-- **Fitur**:
-  - Tampilan kapsul melayang di bagian atas layar dengan animasi *pill expansion* khas iPhone.
-  - Keadaan interaktif:
-    - **Compact State**: Menampilkan ikon transaksi, status pemindaian QRIS, atau animasi Face ID.
-    - **Expanded State**: Dapat diketuk (*tap to expand*) untuk membuka detail transaksi aktif, progres transfer, tombol cepat aksi, atau dismiss.
-  - Mempertahankan posisi fixed di atas dan responsif di mobile serta desktop.
+Menindaklanjuti permintaan dan preferensi yang telah Anda konfirmasikan, berikut adalah rencana terstruktur untuk memperbaiki dan menyempurnakan aplikasi KaiPay:
 
 ---
 
-## 2. Kartu Virtual Kai Card 3D dengan Kilau Giroskop & Animasi Balik
-- **Komponen**: `src/components/BalanceCard.tsx` atau `src/components/KaiCard3D.tsx`.
-- **Fitur**:
-  - Efek rotasi 3D dinamis mengikuti pergerakan kursor mouse (*mouse tilt*) atau sentuhan layar (*touch gyro*).
-  - Lapisan kilau holografik (*holographic sheen / metallic reflection*) yang berpendar saat kartu digerakkan.
-  - Opsi *Flip Card* untuk melihat bagian belakang kartu virtual (CVV, tanggal kedaluwarsa, nomor kartu masked, chip EMV, dan logo Apple Pay / KaiPay resmi).
+## 1. Perbaikan Tema Hitam-Putih (Monokrom) & Fitur Aksen Warna Dinamis
+
+### Masalah Saat Ini
+- Pemilihan warna aksen (`accentColor`: Blue, Monochrome, Green, Purple, Orange) di pengaturan belum diaplikasikan secara menyeluruh ke elemen-elemen tombol, badge, dan indikator aktif karena masih banyak kode yang mengunci warna `#007AFF`.
+- Tema "Hitam Putih" (Apple Monochrome) belum memberikan pengalaman monokrom titanium murni yang menyeluruh.
+
+### Solusi & Penerapan
+- **Sistem CSS Variables Dinamis (`--ios-accent`, `--ios-accent-rgb`, `--ios-accent-hover`)**:
+  - Diterapkan pada `:root` dan disinkronkan langsung saat pengguna mengganti aksen warna di Pengaturan Akun atau Navbar.
+  - Pilihan tema monokrom murni (Black & White Titanium): tombol primer menjadi hitam pekat (dark mode: putih bersih), border silver titanium halus, tanpa warna jenuh.
+  - Pilihan aksen warna:
+    - **Apple Blue** (`#007AFF`)
+    - **Monokrom Titanium** (`#000000` / `#FFFFFF`)
+    - **Apple Mint Green** (`#34C759`)
+    - **Apple Indigo** (`#5856D6`)
+    - **Action Orange** (`#FF9500`)
+- **Penyelarasan Warna Antarmuka**: Seluruh tombol aksi utama, tab aktif di dock bawah, segmented controls, toggle switch, dan highlight transaksi akan otomatis mengikuti variabel warna aksen yang dipilih.
 
 ---
 
-## 3. Animasi Face ID Autentikasi 3D & Efek Suara Shutter
-- **Komponen**: `src/components/FaceIdOverlay.tsx` dan integrasi ke `SendMoneyModal.tsx` & `AuthLockScreen.tsx`.
-- **Fitur**:
-  - Ikon sensor Face ID khas iPhone dengan animasi pemindaian garis kisi 3D (*mesh grid scan*) yang berubah menjadi tanda centang hijau lembut saat berhasil.
-  - Efek suara sintetis shutter kamera kamera/kunci biometrik saat sensor memindai wajah.
+## 2. Penyempurnaan Kai Card 3D: Geser Tangan (Touch/Drag), Hapus Gyro & Cahaya Kanan
+
+### Masalah & Kebutuhan
+- Sensor gyroscope bawaan terkadang jittery atau tidak responsif di berbagai perangkat. Pengguna ingin interaksi geser langsung dengan jari / mouse.
+- Cahaya harus bersumber dari sisi kanan dengan efek specular reflection (kilau cahaya) yang dinamis mengikuti sudut geseran, serta memiliki kedalaman fisik ala Apple Card.
+
+### Solusi & Penerapan
+- **Hapus Sensor Gyroscope**: Menghilangkan listener `deviceorientation`.
+- **Interaksi Geser Multi-Arah Bebas (Drag & Tilt with Physics)**:
+  - Menggunakan gestur drag touch & mouse cursor dengan redaman inersia pegas iOS (`damping: 25`, `stiffness: 280`).
+  - Membaca posisi relatif geseran jari pada kartu untuk menghitung sudut rotasi 3D $X$ dan $Y$.
+- **Pencahayaan Samping Kanan & Specular Sheen**:
+  - Layer refleksi cahaya ditempatkan di sisi kanan (`right: -20%`, radial gradient putih-emas halus).
+  - Saat kartu digeser ke kiri/kanan/atas/bawah, gradasi highlight menyapu permukaan titanium dengan kedalaman bayangan berlapis (*ambient occlusion* & *drop shadow* ganda).
+- **Mode Pratinjau Tumpukan Kartu ala Apple Wallet**:
+  - Menyediakan toggle tampilan tumpukan kartu (Apple Cash + Kai Card Titanium + Virtual Gold) yang dapat digeser dan dipilih secara bergantian.
 
 ---
 
-## 4. Penyempurnaan Kamera QRIS (Mode Zoom 1x & 2x, Riwayat Simpan, & Split Bill)
-- **Komponen**: `src/components/QrModal.tsx`, `src/components/SplitBillModal.tsx`, dan `src/utils/storage.ts`.
-- **Fitur Baru**:
-  - **Pilihan Zoom Lensa (1x & 2x)**:
-    - Tombol kapsul `1x` dan `2x` di dalam viewfinder kamera.
-    - Menggunakan MediaTrack constraints `zoom` jika didukung kamera perangkat, atau *digital crop transform* mulus pada video feed.
-  - **Riwayat Pemindaian QRIS Otomatis**:
-    - Setiap pemindaian QRIS berhasil akan dicatat otomatis ke riwayat pemindaian (`qrisScanHistory`).
-    - Dilengkapi nama toko, tanggal, waktu, bulan, dan tahun secara akurat (format lengkap Indonesia).
-    - Tab/tampilan riwayat scan di dalam QrModal untuk melihat dan membayar ulang kapan saja.
-  - **Fitur Split Bill (Bagi Tagihan)**:
-    - Setelah memindai QRIS merchant, muncul opsi "Bagi Tagihan (Split Bill)".
-    - Pilih teman dari kontak KaiPay, tentukan pembagian (sama rata atau nominal khusus), dan hitung tagihan per orang secara otomatis dengan tautan pembayaran instan.
+## 3. Penyempurnaan Fitur Teman Kontak (Quick Contacts)
+
+### Kebutuhan Pengguna
+- Riwayat transaksi khusus per kontak.
+- Aksi transfer instan satu klik.
+- Foto avatar kustom & badge favorit (bintang/pin).
+- Kategori grup kontak: **Semua**, **Teman**, **Keluarga**, **Bisnis/Rekan**.
+
+### Solusi & Penerapan
+- **Peningkatan Data Model Kontak**:
+  - Menambahkan properti `category` ('teman' | 'keluarga' | 'bisnis'), `isFavorite` (boolean), dan dukungan avatar kustom.
+- **Tampilan Kontak yang Lebih Rapi & Estetik**:
+  - Filter segmented pill: Semua, Favorit ★, Teman, Keluarga.
+  - Indikator badge bintang favorit yang disematkan di pojok avatar.
+- **Sheet Rincian Kontak (Contact Detail Sheet)**:
+  - Membuka modal profil kontak saat diklik.
+  - Menampilkan total mutasi transfer antara pengguna dan kontak tersebut, riwayat transaksi terakhir bersama kontak itu.
+  - Tombol aksi instan: "Kirim Uang Sekarang", "Bagi Tagihan (Split Bill)", dan "Hapus/Ubah Kontak".
 
 ---
 
-## 5. Efek Suara Autentik Apple Pay ("Chime Ding-Ding")
-- **Komponen**: `src/utils/sound.ts`.
-- **Fitur**:
-  - Sintesis audio Web Audio API fidelitas tinggi yang mereproduksi bunyi *double-tone affirmative chime* ("ding-ding" khas Apple Pay) saat pembayaran, transfer, atau scan QRIS berhasil.
-  - Bekerja tanpa ketergantungan file eksternal (100% offline & instan).
+## 4. Penataan Ulang & Perapian UI (Anti-Clutter, iOS 18 Aesthetic)
+
+### Masalah Saat Ini
+- Banyak fitur baru yang bertumpuk membuat tampilan beranda terasa padat.
+
+### Solusi & Penerapan
+- **Penyelarasan Ruang & Hierarki Tipografi**:
+  - Mengurangi kepadatan margin dan padding sesuai standar iOS Inset Grouped layout.
+  - Menempatkan Dynamic Island secara proporsional dan tidak menutupi header utama.
+  - Tombol-tombol sekunder dirapikan ke dalam sub-menu atau floating dock yang minimalis.
+- **Konsistensi Animasi Pegas Apple**:
+  - Seluruh interaksi modal, sheet, klik kartu, dan transisi tab menggunakan kurva spring iOS (`type: 'spring', damping: 28, stiffness: 320`), mulus tanpa patah-patah.
 
 ---
 
-## 6. Unduh Struk Transaksi Digital Format HD
-- **Komponen**: `src/components/ReceiptModal.tsx`.
-- **Fitur**:
-  - Render struk transaksi digital menjadi gambar kanvas resolusi tinggi (High-DPI 2x/3x scale PNG).
-  - Tampilan struk bergaya Apple Wallet Receipt dengan detail merchant, nomor referensi transaksi, waktu lengkap, kategori, dan stempel verifikasi keamanan.
-  - Tombol "Unduh Gambar Struk HD" langsung menyimpan berkas PNG ke perangkat pengguna.
+## 5. Konfigurasi Android Gradle Wrapper (gradlew) & GitHub Actions APK Build
+
+### Kebutuhan
+- Struktur file Gradle Android standar yang siap dibuka di Android Studio.
+- File eksekusi `gradlew` dan `gradlew.bat` serta `gradle-wrapper.properties`.
+- Konfigurasi `capacitor.config.json` dan AndroidManifest.
+- Script workflow `.github/workflows/build-apk.yml` agar repositori GitHub dapat otomatis meng-compile dan merilis file `.apk` siap install di HP Android.
+
+### Struktur yang Disiapkan
+1. `android/`
+   - `gradlew` & `gradlew.bat`
+   - `gradle/wrapper/gradle-wrapper.properties`
+   - `build.gradle` (root project)
+   - `settings.gradle`
+   - `app/build.gradle` (konfigurasi SDK 34, namespace `com.kaipay.app`, versionName "1.0.0")
+   - `app/src/main/AndroidManifest.xml` (Permissions: Internet, Camera, Vibrate, Biometric)
+2. `capacitor.config.json`: Konfigurasi ID aplikasi `com.kaipay.app` dan direktori web build `dist`.
+3. `.github/workflows/build-apk.yml`: Pipeline CI/CD otomatis untuk build APK Android debug/release setiap push ke branch main, dengan output file `KaiPay.apk` yang dapat diunduh langsung dari tab Actions GitHub.
 
 ---
 
-## Urutan Pengerjaan
-1. Buat generator audio sintetis `src/utils/sound.ts` (Apple Pay chime, Face ID scan, Camera shutter).
-2. Perbarui `types/index.ts` dan `storage.ts` untuk mendukung riwayat scan QRIS dan split bill.
-3. Rancang `src/components/DynamicIsland.tsx` interaktif dengan mode ekspansi dan live activity.
-4. Buat efek kartu virtual `KaiCard3D.tsx` dengan rotasi tilt & kilau holografik.
-5. Kembangkan animasi Face ID 3D `FaceIdOverlay.tsx`.
-6. Sempurnakan `QrModal.tsx` dengan zoom 1x/2x, riwayat scan detail toko/waktu, dan integrasi Split Bill.
-7. Sempurnakan `ReceiptModal.tsx` dengan generator unduh gambar struk HD.
-8. Uji coba menyeluruh dengan `compile_applet` dan `lint_applet`.
+## Diagram Alur Sistem yang Disederhanakan
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    KAI PAY IOS ECOSYSTEM                   │
+├──────────────────────────────┬──────────────────────────────┤
+│       Tampilan & Tema        │         Kai Card 3D          │
+│ • Dark/Light Mode            │ • Touch Drag / Geser Jari    │
+│ • Monokrom Murni / Aksen iOS │ • Cahaya Samping Kanan       │
+│ • Variabel CSS --ios-accent  │ • Specular Sheen & Depth     │
+├──────────────────────────────┼──────────────────────────────┤
+│       Manajemen Kontak       │       Build Android APK      │
+│ • Filter Teman/Keluarga/Fav  │ • gradlew & Gradle Wrapper   │
+│ • Riwayat Mutasi per Kontak  │ • Android Studio Structure   │
+│ • Transfer Cepat 1-Klik      │ • GitHub Actions APK Pipeline│
+└──────────────────────────────┴──────────────────────────────┘
+```

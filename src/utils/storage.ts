@@ -39,6 +39,8 @@ export const INITIAL_CONTACTS: QuickContact[] = [
     name: 'Budi Santoso',
     phone: '0813-8821-4491',
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    group: 'teman',
+    isFavorite: true,
     recentCategory: 'makanan',
   },
   {
@@ -46,6 +48,8 @@ export const INITIAL_CONTACTS: QuickContact[] = [
     name: 'Siti Rahma',
     phone: '0857-1192-3488',
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    group: 'keluarga',
+    isFavorite: true,
     recentCategory: 'belanja',
   },
   {
@@ -53,6 +57,8 @@ export const INITIAL_CONTACTS: QuickContact[] = [
     name: 'Kevin Wijaya',
     phone: '0821-4471-9012',
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    group: 'teman',
+    isFavorite: false,
     recentCategory: 'transportasi',
   },
   {
@@ -60,6 +66,8 @@ export const INITIAL_CONTACTS: QuickContact[] = [
     name: 'Amanda Putri',
     phone: '0819-3382-7715',
     avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+    group: 'keluarga',
+    isFavorite: false,
     recentCategory: 'hiburan',
   },
   {
@@ -67,6 +75,8 @@ export const INITIAL_CONTACTS: QuickContact[] = [
     name: 'Dika Pratama',
     phone: '0878-5529-6120',
     avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+    group: 'bisnis',
+    isFavorite: false,
     recentCategory: 'makanan',
   },
 ];

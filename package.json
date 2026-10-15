@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
+    "build:android": "vite build && mkdir -p android/app/src/main/assets/dist && cp -r dist/* android/app/src/main/assets/dist/",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

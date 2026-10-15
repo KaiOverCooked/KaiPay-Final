@@ -70,9 +70,13 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
         transition={iosSpringTransition}
         className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#1C1C1E] via-[#242426] to-[#141416] text-white p-6 sm:p-7 shadow-2xl shadow-black/35 border border-white/[0.12]"
       >
-        {/* Apple Titanium Subtle Radial Sheen */}
+        {/* Apple Titanium Subtle Radial Sheen & Right-Side Light Bloom */}
         <div className="absolute -right-16 -top-16 w-60 h-60 bg-white/[0.04] rounded-full blur-2xl pointer-events-none" />
         <div className="absolute left-1/3 -bottom-20 w-52 h-52 bg-white/[0.03] rounded-full blur-3xl pointer-events-none" />
+
+        {/* Right-Side Directional Specular Sheen (Apple Card Specular) */}
+        <div className="absolute right-0 top-0 bottom-0 w-36 bg-gradient-to-l from-white/[0.14] via-white/[0.04] to-transparent pointer-events-none rounded-r-[28px]" />
+        <div className="absolute top-0 right-0 bottom-0 w-1.5 bg-gradient-to-b from-white/40 via-white/15 to-transparent pointer-events-none rounded-r-[28px]" />
 
         {/* Top Card Row: Apple Pay Lockup & Tools */}
         <div className="relative z-10 flex items-center justify-between">

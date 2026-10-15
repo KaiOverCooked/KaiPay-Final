@@ -123,14 +123,24 @@ export default function App() {
     saveWalletState(state);
   }, [state]);
 
-  // Apply Theme class to HTML document
+  // Apply Theme class and Accent color attribute to HTML document
   useEffect(() => {
-    if (state.user.theme === 'dark') {
-      document.documentElement.classList.add('dark');
+    const root = document.documentElement;
+    root.setAttribute('data-accent', state.user.accentColor || 'blue');
+    root.setAttribute('data-theme', state.user.theme || 'dark');
+
+    if (state.user.theme === 'dark' || state.user.theme === 'monochrome') {
+      root.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
     }
-  }, [state.user.theme]);
+
+    if (state.user.theme === 'monochrome') {
+      root.classList.add('monochrome');
+    } else {
+      root.classList.remove('monochrome');
+    }
+  }, [state.user.theme, state.user.accentColor]);
 
   // Auto-dismiss floating toast banner after 4.5 seconds
   useEffect(() => {
@@ -331,6 +341,25 @@ export default function App() {
     );
   };
 
+  // Toggle Favorite Contact
+  const handleToggleFavoriteContact = (contactId: string) => {
+    setState((prev) => ({
+      ...prev,
+      contacts: prev.contacts.map((c) =>
+        c.id === contactId ? { ...c, isFavorite: !c.isFavorite } : c
+      ),
+    }));
+  };
+
+  // Delete Contact
+  const handleDeleteContact = (contactId: string) => {
+    setState((prev) => ({
+      ...prev,
+      contacts: prev.contacts.filter((c) => c.id !== contactId),
+    }));
+    dispatchPushNotification('Kontak Dihapus', 'Kontak berhasil dihapus dari daftar.', 'system');
+  };
+
   // Reset Data to Default
   const handleResetData = () => {
     const defaultState: WalletState = {
@@ -344,7 +373,11 @@ export default function App() {
     };
     setState(defaultState);
     saveWalletState(defaultState);
-    alert('Seluruh data KaiPay berhasil diatur ulang ke kondisi awal.');
+    dispatchPushNotification(
+      'Data Direset',
+      'Seluruh data simulasi KaiPay berhasil diatur ulang ke kondisi awal.',
+      'system'
+    );
   };
 
   // Open transaction receipt on notification click
@@ -446,11 +479,22 @@ export default function App() {
 
                   <QuickContacts
                     contacts={state.contacts}
+                    transactions={state.transactions}
+                    user={state.user}
                     onSelectContact={(c) => {
                       setSendRecipient({ name: c.name, phone: c.phone });
                       setIsSendOpen(true);
                     }}
                     onAddNewContact={() => setIsAddContactOpen(true)}
+                    onToggleFavorite={handleToggleFavoriteContact}
+                    onDeleteContact={handleDeleteContact}
+                    onOpenSplitBillWithContact={(c) => {
+                      setSplitBillInitial({
+                        amount: 150000,
+                        merchantName: `Tagihan bersama ${c.name}`,
+                      });
+                      setIsSplitBillOpen(true);
+                    }}
                   />
 
                   {/* Recent Transactions Feed (iOS Grouped Inset Card) */}
@@ -463,10 +507,10 @@ export default function App() {
                         whileTap={iosQuickTap}
                         type="button"
                         onClick={() => setActiveTab('history')}
-                        className="text-xs font-semibold text-[#007AFF] hover:underline flex items-center gap-1 transition-colors"
+                        className="text-xs font-semibold text-ios-accent hover:underline flex items-center gap-1 transition-colors"
                       >
                         <span>Lihat Semua</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-[#007AFF]" />
+                        <ChevronRight className="w-3.5 h-3.5 text-ios-accent" />
                       </motion.button>
                     </div>
 
@@ -541,7 +585,7 @@ export default function App() {
                           setQrTab('scan');
                           setIsQrOpen(true);
                         }}
-                        className="py-2.5 px-3 rounded-full bg-[#007AFF] hover:bg-[#0062CC] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                        className="py-2.5 px-3 rounded-full bg-ios-accent hover:bg-ios-accent/90 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
                       >
                         <span>Buka Scanner</span>
                       </motion.button>
@@ -574,7 +618,7 @@ export default function App() {
                         whileTap={iosQuickTap}
                         type="button"
                         onClick={() => setActiveTab('analytics')}
-                        className="text-xs text-[#007AFF] hover:underline font-semibold"
+                        className="text-xs text-ios-accent hover:underline font-semibold"
                       >
                         Kelola
                       </motion.button>
@@ -598,7 +642,7 @@ export default function App() {
                                 animate={{ width: `${Math.min(100, percent)}%` }}
                                 transition={{ type: 'spring', stiffness: 240, damping: 24 }}
                                 className={`h-full rounded-full ${
-                                  percent >= 100 ? 'bg-[#FF3B30]' : percent >= 80 ? 'bg-[#FF9500]' : 'bg-[#007AFF]'
+                                  percent >= 100 ? 'bg-[#FF3B30]' : percent >= 80 ? 'bg-[#FF9500]' : 'bg-ios-accent'
                                 }`}
                               />
                             </div>

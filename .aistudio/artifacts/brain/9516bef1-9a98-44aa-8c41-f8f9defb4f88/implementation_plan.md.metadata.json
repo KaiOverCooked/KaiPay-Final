@@ -1,6 +1,6 @@
 {
-  "summary": "Rencana implementasi penyempurnaan menyeluruh KaiPay:\n1. Dynamic Island interaktif & expandable saat transaksi/aktivitas berjalan\n2. Kartu virtual Kai Card 3D dengan efek rotasi giroskop, kemilau holografik, dan flip card detail nomor kartu\n3. Animasi Face ID 3D autentikasi mesh dengan suara shutter/kamera & chime sukses\n4. Pemindai QRIS disempurnakan dengan mode zoom 1x & 2x, riwayat pemindaian tersimpan otomatis dengan cap waktu lengkap, serta fitur Split Bill bagi tagihan dengan teman kontak\n5. Audio sintetis autentik Apple Pay (\"chime ding-ding\") saat transaksi berhasil\n6. Unduh struk transaksi digital resolusi tinggi (HD image PNG) siap simpan ke galeri foto",
-  "updatedAt": "2026-10-13T20:02:03.629918335Z",
+  "summary": "Rencana implementasi menyeluruh untuk perbaikan dan penyempurnaan KaiPay:\n1. Perbaikan tema hitam putih (monochrome) dan fitur warna aksen iOS dinamis.\n2. Rekayasa ulang Kai Card 3D: geser bebas dengan jari/mouse (touch drag), hapus gyro, pencahayaan di samping kanan, pantulan cahaya realistis & kedalaman Apple.\n3. Penyempurnaan fitur teman kontak: filter grup (Teman/Keluarga), badge favorit, foto kustom, modal rincian kontak dengan riwayat transaksi dan transfer instan.\n4. Perapian UI agar lebih bersih, elegan, dan estetik ala iOS 18 tanpa clutter.\n5. Setup Android Gradle Wrapper (gradlew) dan GitHub Actions Workflow untuk build APK KaiPay.",
+  "updatedAt": "2026-10-14T23:50:05.893410029Z",
   "requestFeedback": true,
   "userFacing": true
 }

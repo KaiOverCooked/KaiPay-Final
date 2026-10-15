@@ -25,7 +25,7 @@ export interface UserProfile {
   email: string;
   avatarUrl: string;
   currency: CurrencyCode;
-  theme: 'dark' | 'light';
+  theme: 'dark' | 'light' | 'monochrome';
   accentColor?: 'blue' | 'monochrome' | 'green' | 'purple' | 'orange';
   pin: string;
   biometricEnabled: boolean;
@@ -55,12 +55,17 @@ export interface CategoryBudget {
   color: string;
 }
 
+export type ContactGroup = 'teman' | 'keluarga' | 'bisnis';
+
 export interface QuickContact {
   id: string;
   name: string;
   phone: string;
   avatarUrl: string;
+  group?: ContactGroup;
+  isFavorite?: boolean;
   recentCategory?: TransactionCategory;
+  note?: string;
 }
 
 export interface PushNotification {

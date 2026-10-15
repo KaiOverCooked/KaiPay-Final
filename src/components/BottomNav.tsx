@@ -25,7 +25,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           onClick={() => setActiveTab('home')}
           className={`flex-1 h-12 rounded-full flex flex-col items-center justify-center transition-colors ${
             activeTab === 'home'
-              ? 'text-[#007AFF] dark:text-[#0A84FF]'
+              ? 'text-ios-accent'
               : 'text-[#8E8E93] hover:text-[#000000] dark:hover:text-[#FFFFFF]'
           }`}
         >
@@ -46,7 +46,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           onClick={() => setActiveTab('history')}
           className={`flex-1 h-12 rounded-full flex flex-col items-center justify-center transition-colors ${
             activeTab === 'history'
-              ? 'text-[#007AFF] dark:text-[#0A84FF]'
+              ? 'text-ios-accent'
               : 'text-[#8E8E93] hover:text-[#000000] dark:hover:text-[#FFFFFF]'
           }`}
         >
@@ -80,7 +80,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           onClick={() => setActiveTab('analytics')}
           className={`flex-1 h-12 rounded-full flex flex-col items-center justify-center transition-colors ${
             activeTab === 'analytics'
-              ? 'text-[#007AFF] dark:text-[#0A84FF]'
+              ? 'text-ios-accent'
               : 'text-[#8E8E93] hover:text-[#000000] dark:hover:text-[#FFFFFF]'
           }`}
         >
@@ -101,7 +101,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           onClick={() => setActiveTab('profile')}
           className={`flex-1 h-12 rounded-full flex flex-col items-center justify-center transition-colors ${
             activeTab === 'profile'
-              ? 'text-[#007AFF] dark:text-[#0A84FF]'
+              ? 'text-ios-accent'
               : 'text-[#8E8E93] hover:text-[#000000] dark:hover:text-[#FFFFFF]'
           }`}
         >

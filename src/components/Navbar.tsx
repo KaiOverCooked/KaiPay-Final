@@ -61,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setActiveTab(tab.id)}
               className={`transition-colors whitespace-nowrap shrink-0 pb-1 ${
                 activeTab === tab.id
-                  ? 'text-[#000000] dark:text-[#FFFFFF] font-semibold border-b-2 border-[#007AFF] dark:border-[#0A84FF]'
+                  ? 'text-[#000000] dark:text-[#FFFFFF] font-semibold border-b-2 border-ios-accent'
                   : 'text-[#6C6C70] dark:text-[#8E8E93] hover:text-[#000000] dark:hover:text-[#FFFFFF]'
               }`}
             >

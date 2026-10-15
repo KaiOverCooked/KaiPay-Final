@@ -9,11 +9,17 @@ import {
   RotateCcw, 
   Check,
   Smartphone,
-  Sparkles
+  Sparkles,
+  Layers,
+  Terminal,
+  Download,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import { UserProfile, CurrencyCode, CURRENCY_RATES } from '../types';
 import { generateQuickPinHash } from '../utils/crypto';
 import { iosQuickTap } from '../utils/motion';
+import { sounds } from '../utils/sound';
 
 interface ProfileViewProps {
   user: UserProfile;
@@ -32,6 +38,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [isSaved, setIsSaved] = useState(false);
   const [isChangingPin, setIsChangingPin] = useState(false);
   const [newPin, setNewPin] = useState('');
+  const [copiedGradleCommand, setCopiedGradleCommand] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const presetAvatars = [
@@ -43,7 +50,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const iosAccents = [
     { id: 'blue', label: 'Apple Blue', hex: '#007AFF' },
-    { id: 'monochrome', label: 'Titanium', hex: '#1C1C1E' },
+    { id: 'monochrome', label: 'Titanium Hitam', hex: '#1C1C1E' },
     { id: 'green', label: 'Apple Green', hex: '#34C759' },
     { id: 'purple', label: 'Apple Indigo', hex: '#5856D6' },
     { id: 'orange', label: 'Action Orange', hex: '#FF9500' },
@@ -52,6 +59,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateUser({ name, phone, email });
+    sounds.playApplePayChime();
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
   };
@@ -63,6 +71,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       reader.onload = () => {
         if (typeof reader.result === 'string') {
           onUpdateUser({ avatarUrl: reader.result });
+          sounds.playHapticClick();
         }
       };
       reader.readAsDataURL(file);
@@ -72,9 +81,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const handleSavePin = () => {
     if (newPin.length === 6) {
       onUpdateUser({ pin: generateQuickPinHash(newPin) });
+      sounds.playApplePayChime();
       setIsChangingPin(false);
       setNewPin('');
     }
+  };
+
+  const copyCommand = (cmd: string) => {
+    navigator.clipboard.writeText(cmd);
+    setCopiedGradleCommand(true);
+    sounds.playHapticClick();
+    setTimeout(() => setCopiedGradleCommand(false), 2000);
   };
 
   return (
@@ -85,7 +102,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           Pengaturan Akun & Tampilan
         </h2>
         <p className="text-xs text-[#6C6C70] dark:text-[#8E8E93] mt-0.5">
-          Kelola profil personal, estetika tampilan khas iPhone (iOS), keamanan biometrik, dan mata uang
+          Kelola profil personal, tema Apple iOS, aksen warna, konfigurasi build APK Android, dan keamanan
         </p>
       </div>
 
@@ -93,60 +110,56 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       <div className="p-6 rounded-[26px] bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Smartphone className="w-4 h-4 text-[#007AFF]" />
+            <Smartphone className="w-4 h-4 text-ios-accent" />
             <h3 className="text-sm font-bold text-[#000000] dark:text-[#FFFFFF]">
-              Tampilan & Kecerahan iPhone
+              Tampilan & Tema iPhone
             </h3>
           </div>
-          <span className="text-[11px] font-semibold text-[#007AFF] bg-[#007AFF]/10 px-2 py-0.5 rounded-full">
+          <span className="text-[11px] font-semibold text-ios-accent bg-ios-accent-subtle px-2.5 py-0.5 rounded-full">
             iOS Experience
           </span>
         </div>
 
-        {/* Side-by-Side iPhone Theme Mockups */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Light Mode Mockup */}
+        {/* 3 Apple Theme Options: Light, Dark, Monochrome */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* 1. Light Mode Mockup */}
           <motion.div
             whileTap={iosQuickTap}
-            onClick={() => onUpdateUser({ theme: 'light' })}
+            onClick={() => {
+              sounds.playHapticClick();
+              onUpdateUser({ theme: 'light' });
+            }}
             className={`cursor-pointer rounded-2xl p-3 flex flex-col items-center border-2 transition-all ${
               user.theme === 'light'
-                ? 'border-[#007AFF] bg-[#007AFF]/5 dark:bg-[#007AFF]/10 shadow-md'
+                ? 'border-ios-accent bg-ios-accent-subtle shadow-md'
                 : 'border-transparent bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 opacity-80 hover:opacity-100'
             }`}
           >
-            {/* Miniature iPhone Bezel Preview */}
-            <div className="w-full aspect-[9/14] max-w-[140px] rounded-2xl bg-[#F2F2F7] border border-[#D1D1D6] p-2 flex flex-col justify-between shadow-inner relative overflow-hidden select-none">
-              {/* Dynamic Island / Notch */}
-              <div className="w-12 h-2.5 bg-black rounded-full mx-auto mb-1.5" />
-              {/* Mini Content */}
+            <div className="w-full aspect-[9/13] max-w-[120px] rounded-2xl bg-[#F2F2F7] border border-[#D1D1D6] p-2 flex flex-col justify-between shadow-inner relative overflow-hidden select-none">
+              <div className="w-10 h-2 bg-black rounded-full mx-auto mb-1" />
               <div className="space-y-1.5 w-full">
-                <div className="h-6 rounded-lg bg-white border border-[#E5E5EA] p-1 flex items-center justify-between">
-                  <div className="w-8 h-1.5 bg-[#1C1C1E] rounded-full" />
-                  <div className="w-3 h-3 rounded-full bg-[#007AFF]" />
+                <div className="h-5 rounded-lg bg-white border border-[#E5E5EA] p-1 flex items-center justify-between">
+                  <div className="w-6 h-1 bg-[#1C1C1E] rounded-full" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-ios-accent" />
                 </div>
-                <div className="h-10 rounded-lg bg-white border border-[#E5E5EA] p-1.5 flex flex-col justify-center">
-                  <div className="w-12 h-2 bg-[#000000] rounded-full" />
-                  <div className="w-6 h-1.5 bg-[#8E8E93] rounded-full mt-1" />
-                </div>
-                <div className="h-4 rounded-md bg-[#007AFF] flex items-center justify-center">
-                  <div className="w-8 h-1 bg-white rounded-full" />
+                <div className="h-8 rounded-lg bg-white border border-[#E5E5EA] p-1.5 flex flex-col justify-center">
+                  <div className="w-10 h-1.5 bg-[#000000] rounded-full" />
+                  <div className="w-5 h-1 bg-[#8E8E93] rounded-full mt-1" />
                 </div>
               </div>
-              {/* Mini Home Indicator */}
-              <div className="w-10 h-0.5 bg-black/40 rounded-full mx-auto mt-1" />
+              <div className="w-8 h-0.5 bg-black/40 rounded-full mx-auto mt-1" />
             </div>
 
-            <div className="mt-3 flex items-center gap-1.5">
-              <div className={`w-4 h-4 rounded-full flex items-center justify-center border ${
+            <div className="mt-2.5 flex items-center gap-1.5">
+              <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border ${
                 user.theme === 'light'
-                  ? 'border-[#007AFF] bg-[#007AFF] text-white'
+                  ? 'border-ios-accent bg-ios-accent text-white'
                   : 'border-[#8E8E93] bg-transparent'
               }`}>
-                {user.theme === 'light' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                {user.theme === 'light' && <Check className="w-2 h-2 stroke-[3]" />}
               </div>
               <span className="text-xs font-bold text-[#000000] dark:text-[#FFFFFF]">
-                Terang (Light iOS)
+                Terang (Light)
               </span>
             </div>
             <span className="text-[10px] text-[#6C6C70] dark:text-[#8E8E93] mt-0.5">
@@ -154,68 +167,114 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </span>
           </motion.div>
 
-          {/* Dark Mode Mockup */}
+          {/* 2. Dark Mode Mockup */}
           <motion.div
             whileTap={iosQuickTap}
-            onClick={() => onUpdateUser({ theme: 'dark' })}
+            onClick={() => {
+              sounds.playHapticClick();
+              onUpdateUser({ theme: 'dark' });
+            }}
             className={`cursor-pointer rounded-2xl p-3 flex flex-col items-center border-2 transition-all ${
               user.theme === 'dark'
-                ? 'border-[#007AFF] bg-[#007AFF]/5 dark:bg-[#007AFF]/10 shadow-md'
+                ? 'border-ios-accent bg-ios-accent-subtle shadow-md'
                 : 'border-transparent bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 opacity-80 hover:opacity-100'
             }`}
           >
-            {/* Miniature iPhone Bezel Preview */}
-            <div className="w-full aspect-[9/14] max-w-[140px] rounded-2xl bg-[#000000] border border-[#3A3A3C] p-2 flex flex-col justify-between shadow-inner relative overflow-hidden select-none">
-              {/* Dynamic Island / Notch */}
-              <div className="w-12 h-2.5 bg-[#1C1C1E] border border-white/10 rounded-full mx-auto mb-1.5" />
-              {/* Mini Content */}
+            <div className="w-full aspect-[9/13] max-w-[120px] rounded-2xl bg-[#000000] border border-[#3A3A3C] p-2 flex flex-col justify-between shadow-inner relative overflow-hidden select-none">
+              <div className="w-10 h-2 bg-[#1C1C1E] border border-white/10 rounded-full mx-auto mb-1" />
               <div className="space-y-1.5 w-full">
-                <div className="h-6 rounded-lg bg-[#1C1C1E] border border-white/10 p-1 flex items-center justify-between">
-                  <div className="w-8 h-1.5 bg-white rounded-full" />
-                  <div className="w-3 h-3 rounded-full bg-[#0A84FF]" />
+                <div className="h-5 rounded-lg bg-[#1C1C1E] border border-white/10 p-1 flex items-center justify-between">
+                  <div className="w-6 h-1 bg-white rounded-full" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-ios-accent" />
                 </div>
-                <div className="h-10 rounded-lg bg-[#1C1C1E] border border-white/10 p-1.5 flex flex-col justify-center">
-                  <div className="w-12 h-2 bg-white rounded-full" />
-                  <div className="w-6 h-1.5 bg-[#8E8E93] rounded-full mt-1" />
-                </div>
-                <div className="h-4 rounded-md bg-[#0A84FF] flex items-center justify-center">
-                  <div className="w-8 h-1 bg-white rounded-full" />
+                <div className="h-8 rounded-lg bg-[#1C1C1E] border border-white/10 p-1.5 flex flex-col justify-center">
+                  <div className="w-10 h-1.5 bg-white rounded-full" />
+                  <div className="w-5 h-1 bg-[#8E8E93] rounded-full mt-1" />
                 </div>
               </div>
-              {/* Mini Home Indicator */}
-              <div className="w-10 h-0.5 bg-white/40 rounded-full mx-auto mt-1" />
+              <div className="w-8 h-0.5 bg-white/40 rounded-full mx-auto mt-1" />
             </div>
 
-            <div className="mt-3 flex items-center gap-1.5">
-              <div className={`w-4 h-4 rounded-full flex items-center justify-center border ${
+            <div className="mt-2.5 flex items-center gap-1.5">
+              <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border ${
                 user.theme === 'dark'
-                  ? 'border-[#007AFF] bg-[#007AFF] text-white'
+                  ? 'border-ios-accent bg-ios-accent text-white'
                   : 'border-[#8E8E93] bg-transparent'
               }`}>
-                {user.theme === 'dark' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                {user.theme === 'dark' && <Check className="w-2 h-2 stroke-[3]" />}
               </div>
               <span className="text-xs font-bold text-[#000000] dark:text-[#FFFFFF]">
-                Gelap (OLED iPhone)
+                Gelap (Dark OLED)
               </span>
             </div>
             <span className="text-[10px] text-[#6C6C70] dark:text-[#8E8E93] mt-0.5">
               True Black & Slate
             </span>
           </motion.div>
+
+          {/* 3. Monochrome Mode Mockup (Hitam Putih Murni) */}
+          <motion.div
+            whileTap={iosQuickTap}
+            onClick={() => {
+              sounds.playHapticClick();
+              onUpdateUser({ theme: 'monochrome', accentColor: 'monochrome' });
+            }}
+            className={`cursor-pointer rounded-2xl p-3 flex flex-col items-center border-2 transition-all ${
+              user.theme === 'monochrome'
+                ? 'border-white dark:border-white bg-black/10 dark:bg-white/10 shadow-md ring-1 ring-white/20'
+                : 'border-transparent bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 opacity-80 hover:opacity-100'
+            }`}
+          >
+            <div className="w-full aspect-[9/13] max-w-[120px] rounded-2xl bg-black border border-white/25 p-2 flex flex-col justify-between shadow-inner relative overflow-hidden select-none">
+              <div className="w-10 h-2 bg-zinc-900 border border-white/20 rounded-full mx-auto mb-1" />
+              <div className="space-y-1.5 w-full">
+                <div className="h-5 rounded-lg bg-zinc-900 border border-white/20 p-1 flex items-center justify-between">
+                  <div className="w-6 h-1 bg-white rounded-full" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                </div>
+                <div className="h-8 rounded-lg bg-zinc-900 border border-white/20 p-1.5 flex flex-col justify-center">
+                  <div className="w-10 h-1.5 bg-white rounded-full" />
+                  <div className="w-5 h-1 bg-zinc-400 rounded-full mt-1" />
+                </div>
+              </div>
+              <div className="w-8 h-0.5 bg-white rounded-full mx-auto mt-1" />
+            </div>
+
+            <div className="mt-2.5 flex items-center gap-1.5">
+              <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border ${
+                user.theme === 'monochrome'
+                  ? 'border-white bg-white text-black'
+                  : 'border-[#8E8E93] bg-transparent'
+              }`}>
+                {user.theme === 'monochrome' && <Check className="w-2 h-2 stroke-[3]" />}
+              </div>
+              <span className="text-xs font-bold text-[#000000] dark:text-[#FFFFFF]">
+                Hitam-Putih
+              </span>
+            </div>
+            <span className="text-[10px] text-[#6C6C70] dark:text-[#8E8E93] mt-0.5">
+              Pure Titanium B&W
+            </span>
+          </motion.div>
         </div>
 
-        {/* Apple Accent Tint Selector */}
-        <div className="pt-3 border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs font-bold text-[#000000] dark:text-[#FFFFFF]">
-              Aksen Warna Khas Apple
-            </span>
-            <span className="text-[11px] text-[#6C6C70] dark:text-[#8E8E93]">
-              Warna tombol & elemen aktif
+        {/* Apple Accent Tint Selector (Aksen Warna Aktif) */}
+        <div className="pt-4 border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <span className="text-xs font-bold text-[#000000] dark:text-[#FFFFFF] block">
+                Aksen Warna Khas Apple
+              </span>
+              <span className="text-[11px] text-[#6C6C70] dark:text-[#8E8E93]">
+                Mengubah warna tombol, chip aktif, ikon, dan sorotan antarmuka
+              </span>
+            </div>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-ios-accent font-bold">
+              {user.accentColor || 'blue'}
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 overflow-x-auto pb-1">
             {iosAccents.map((acc) => {
               const isActive = (user.accentColor || 'blue') === acc.id;
               return (
@@ -223,19 +282,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   key={acc.id}
                   whileTap={iosQuickTap}
                   type="button"
-                  onClick={() => onUpdateUser({ accentColor: acc.id })}
-                  className="flex flex-col items-center gap-1 group"
+                  onClick={() => {
+                    sounds.playHapticClick();
+                    onUpdateUser({ accentColor: acc.id });
+                  }}
+                  className="flex flex-col items-center gap-1.5 group shrink-0"
                   title={acc.label}
                 >
                   <div
                     style={{ backgroundColor: acc.hex }}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-transform group-hover:scale-110 ${
-                      isActive ? 'ring-2 ring-offset-2 ring-[#007AFF] dark:ring-offset-black' : ''
+                    className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all group-hover:scale-110 ${
+                      isActive 
+                        ? 'ring-2 ring-offset-2 ring-ios-accent dark:ring-offset-black scale-105' 
+                        : 'border border-black/10 dark:border-white/10'
                     }`}
                   >
                     {isActive && <Check className="w-4 h-4 text-white stroke-[3]" />}
                   </div>
-                  <span className={`text-[10px] ${isActive ? 'font-bold text-[#000000] dark:text-white' : 'text-[#8E8E93]'}`}>
+                  <span className={`text-[10px] ${isActive ? 'font-bold text-ios-accent' : 'text-[#8E8E93]'}`}>
                     {acc.label.split(' ')[0]}
                   </span>
                 </motion.button>
@@ -260,7 +324,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               whileTap={iosQuickTap}
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-0 right-0 p-2 rounded-full bg-[#007AFF] text-white shadow-lg hover:scale-110 transition-transform ring-2 ring-white dark:ring-black"
+              className="absolute bottom-0 right-0 p-2 rounded-full bg-ios-accent text-white shadow-lg hover:scale-110 transition-transform ring-2 ring-white dark:ring-black"
               title="Unggah Foto Profil"
             >
               <Camera className="w-4 h-4" />
@@ -294,8 +358,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   key={i}
                   whileTap={iosQuickTap}
                   type="button"
-                  onClick={() => onUpdateUser({ avatarUrl: url })}
-                  className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-[#D1D1D6] dark:ring-[#3A3A3C] hover:ring-[#007AFF] transition-all"
+                  onClick={() => {
+                    sounds.playHapticClick();
+                    onUpdateUser({ avatarUrl: url });
+                  }}
+                  className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-[#D1D1D6] dark:ring-[#3A3A3C] hover:ring-ios-accent transition-all"
                 >
                   <img src={url} alt="" className="w-full h-full object-cover" />
                 </motion.button>
@@ -315,7 +382,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl bg-[#F2F2F7] dark:bg-[#2C2C2E] border border-transparent text-xs font-medium text-[#000000] dark:text-[#FFFFFF] focus:bg-white dark:focus:bg-[#1C1C1E] focus:outline-none focus:ring-2 focus:ring-[#007AFF] transition-all"
+                className="w-full h-11 px-3.5 rounded-xl bg-[#F2F2F7] dark:bg-[#2C2C2E] border border-transparent text-xs font-medium text-[#000000] dark:text-[#FFFFFF] focus:bg-white dark:focus:bg-[#1C1C1E] focus:outline-none focus:ring-2 focus:ring-ios-accent transition-all"
               />
             </div>
 
@@ -327,7 +394,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl bg-[#F2F2F7] dark:bg-[#2C2C2E] border border-transparent text-xs font-mono font-medium text-[#000000] dark:text-[#FFFFFF] focus:bg-white dark:focus:bg-[#1C1C1E] focus:outline-none focus:ring-2 focus:ring-[#007AFF] transition-all"
+                className="w-full h-11 px-3.5 rounded-xl bg-[#F2F2F7] dark:bg-[#2C2C2E] border border-transparent text-xs font-mono font-medium text-[#000000] dark:text-[#FFFFFF] focus:bg-white dark:focus:bg-[#1C1C1E] focus:outline-none focus:ring-2 focus:ring-ios-accent transition-all"
               />
             </div>
           </div>
@@ -340,7 +407,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-11 px-3.5 rounded-xl bg-[#F2F2F7] dark:bg-[#2C2C2E] border border-transparent text-xs font-medium text-[#000000] dark:text-[#FFFFFF] focus:bg-white dark:focus:bg-[#1C1C1E] focus:outline-none focus:ring-2 focus:ring-[#007AFF] transition-all"
+              className="w-full h-11 px-3.5 rounded-xl bg-[#F2F2F7] dark:bg-[#2C2C2E] border border-transparent text-xs font-medium text-[#000000] dark:text-[#FFFFFF] focus:bg-white dark:focus:bg-[#1C1C1E] focus:outline-none focus:ring-2 focus:ring-ios-accent transition-all"
             />
           </div>
 
@@ -348,7 +415,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <motion.button
               whileTap={iosQuickTap}
               type="submit"
-              className="py-2.5 px-5 rounded-full bg-[#007AFF] hover:bg-[#0062CC] text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+              className="py-2.5 px-5 rounded-full bg-ios-accent hover:bg-ios-accent/90 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
             >
               {isSaved ? (
                 <>
@@ -363,6 +430,76 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </form>
       </div>
 
+      {/* Android Gradle & APK Build Card (Fitur yang diminta user) */}
+      <div className="p-6 rounded-[26px] bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-emerald-500/15 text-[#34C759]">
+              <Terminal className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[#000000] dark:text-[#FFFFFF]">
+                Gradle Wrapper & Build APK Android
+              </h3>
+              <p className="text-[11px] text-[#6C6C70] dark:text-[#8E8E93]">
+                Konfigurasi Gradle v8.2 & GitHub Action siap pasang ke APK
+              </p>
+            </div>
+          </div>
+
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-[#34C759] border border-emerald-500/20">
+            Gradle Ready
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {/* Status Items */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div className="p-3 rounded-2xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 border border-black/5 dark:border-white/5 flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-[#34C759] shrink-0" />
+              <div>
+                <span className="font-semibold text-[#000000] dark:text-white block">Gradlew Wrapper</span>
+                <span className="text-[10px] text-[#8E8E93]">./gradlew & gradlew.bat (Gradle 8.2)</span>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 border border-black/5 dark:border-white/5 flex items-center gap-2.5">
+              <Check className="w-4 h-4 text-[#34C759] shrink-0" />
+              <div>
+                <span className="font-semibold text-[#000000] dark:text-white block">GitHub Actions Workflow</span>
+                <span className="text-[10px] text-[#8E8E93]">.github/workflows/build-apk.yml</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Command Snippet */}
+          <div className="p-3.5 rounded-2xl bg-black text-white font-mono text-xs flex items-center justify-between border border-white/10">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <span className="text-[#34C759]">$</span>
+              <span className="text-zinc-300">./gradlew assembleDebug</span>
+            </div>
+
+            <motion.button
+              whileTap={iosQuickTap}
+              type="button"
+              onClick={() => copyCommand('./gradlew assembleDebug')}
+              className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white shrink-0 ml-2"
+              title="Salin Perintah"
+            >
+              {copiedGradleCommand ? (
+                <Check className="w-3.5 h-3.5 text-[#34C759]" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </motion.button>
+          </div>
+
+          <p className="text-[11px] text-[#8E8E93] leading-relaxed">
+            Untuk membangun APK di Android Studio atau GitHub, jalankan perintah di atas. Workflow GitHub Actions akan secara otomatis mengkompilasi file <code className="text-ios-accent">app-debug.apk</code> yang dapat diunduh langsung dari tab Actions pada repositori GitHub Anda.
+          </p>
+        </div>
+      </div>
+
       {/* Currency Selector (iOS Inset Grouped) */}
       <div className="p-6 rounded-[26px] bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm space-y-4">
         <h3 className="text-sm font-bold text-[#000000] dark:text-[#FFFFFF]">
@@ -371,7 +508,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
         <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 border border-transparent">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-white dark:bg-[#3A3A3C] text-[#007AFF] shadow-sm">
+            <div className="p-2.5 rounded-xl bg-white dark:bg-[#3A3A3C] text-ios-accent shadow-sm">
               <Coins className="w-4 h-4" />
             </div>
             <div>
@@ -384,8 +521,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           <select
             value={user.currency}
-            onChange={(e) => onUpdateUser({ currency: e.target.value as CurrencyCode })}
-            className="h-9 px-3 rounded-xl bg-white dark:bg-[#1C1C1E] text-xs font-bold font-mono text-[#000000] dark:text-[#FFFFFF] border border-[#E5E5EA] dark:border-[#3A3A3C] shadow-sm"
+            onChange={(e) => {
+              sounds.playHapticClick();
+              onUpdateUser({ currency: e.target.value as CurrencyCode });
+            }}
+            className="h-9 px-3 rounded-xl bg-white dark:bg-[#1C1C1E] text-xs font-bold font-mono text-[#000000] dark:text-[#FFFFFF] border border-[#E5E5EA] dark:border-[#3A3A3C] shadow-sm focus:ring-2 focus:ring-ios-accent outline-none"
           >
             {(Object.keys(CURRENCY_RATES) as CurrencyCode[]).map((code) => (
               <option key={code} value={code}>
@@ -422,7 +562,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <input
                 type="checkbox"
                 checked={user.biometricEnabled}
-                onChange={(e) => onUpdateUser({ biometricEnabled: e.target.checked })}
+                onChange={(e) => {
+                  sounds.playHapticClick();
+                  onUpdateUser({ biometricEnabled: e.target.checked });
+                }}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-[#E5E5EA] dark:bg-[#39393D] peer-focus:outline-none rounded-full peer peer-checked:bg-[#34C759] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm" />
@@ -432,7 +575,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           {/* 2FA Toggle */}
           <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 border border-transparent">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-white dark:bg-[#3A3A3C] text-[#007AFF] shadow-sm">
+              <div className="p-2.5 rounded-xl bg-white dark:bg-[#3A3A3C] text-ios-accent shadow-sm">
                 <ShieldCheck className="w-4 h-4" />
               </div>
               <div>
@@ -448,7 +591,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <input
                 type="checkbox"
                 checked={user.twoFactorEnabled}
-                onChange={(e) => onUpdateUser({ twoFactorEnabled: e.target.checked })}
+                onChange={(e) => {
+                  sounds.playHapticClick();
+                  onUpdateUser({ twoFactorEnabled: e.target.checked });
+                }}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-[#E5E5EA] dark:bg-[#39393D] peer-focus:outline-none rounded-full peer peer-checked:bg-[#34C759] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm" />
@@ -473,8 +619,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <motion.button
                 whileTap={iosQuickTap}
                 type="button"
-                onClick={() => setIsChangingPin(!isChangingPin)}
-                className="text-xs font-semibold text-[#007AFF] hover:underline"
+                onClick={() => {
+                  sounds.playHapticClick();
+                  setIsChangingPin(!isChangingPin);
+                }}
+                className="text-xs font-semibold text-ios-accent hover:underline"
               >
                 {isChangingPin ? 'Batal' : 'Ubah PIN'}
               </motion.button>
@@ -488,14 +637,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   value={newPin}
                   onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
                   placeholder="PIN Baru 6 Digit"
-                  className="w-36 h-9 px-3 rounded-xl bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#3A3A3C] text-xs font-mono font-medium focus:ring-2 focus:ring-[#007AFF] outline-none"
+                  className="w-36 h-9 px-3 rounded-xl bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#3A3A3C] text-xs font-mono font-medium focus:ring-2 focus:ring-ios-accent outline-none text-[#000000] dark:text-white"
                 />
                 <motion.button
                   whileTap={iosQuickTap}
                   type="button"
                   disabled={newPin.length !== 6}
                   onClick={handleSavePin}
-                  className="h-9 px-4 rounded-xl bg-[#007AFF] text-white text-xs font-bold disabled:opacity-40"
+                  className="h-9 px-4 rounded-xl bg-ios-accent text-white text-xs font-bold disabled:opacity-40"
                 >
                   Simpan PIN
                 </motion.button>
@@ -512,6 +661,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           type="button"
           onClick={() => {
             if (confirm('Apakah Anda yakin ingin mengatur ulang data simulasi KaiPay ke pengaturan awal?')) {
+              sounds.playHapticClick();
               onResetData();
             }
           }}

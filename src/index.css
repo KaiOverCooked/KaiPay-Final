@@ -1,11 +1,26 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode for Tailwind CSS v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-ios-accent: var(--ios-accent);
+  --color-ios-accent-hover: var(--ios-accent-hover);
+  --color-ios-accent-subtle: var(--ios-accent-subtle);
+  --color-ios-accent-text: var(--ios-accent-text);
+  --color-ios-bg: var(--ios-bg);
+  --color-ios-card: var(--ios-card);
+  --color-ios-secondary: var(--ios-secondary);
+  --color-ios-tertiary: var(--ios-tertiary);
+  --color-ios-border: var(--ios-border);
+}
+
 @layer base {
   :root {
     --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", 'Plus Jakarta Sans', sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'JetBrains Mono', monospace;
 
-    /* Apple iOS Light Tokens */
+    /* Apple iOS Light Tokens (Porcelain & Soft Slate) */
     --ios-bg: #F2F2F7;
     --ios-card: #FFFFFF;
     --ios-secondary: #E5E5EA;
@@ -18,10 +33,42 @@
     --ios-green: #34C759;
     --ios-red: #FF3B30;
     --ios-orange: #FF9500;
+
+    /* Dynamic Apple Accent Token (Default: Apple Blue) */
+    --ios-accent: #007AFF;
+    --ios-accent-hover: #0062CC;
+    --ios-accent-subtle: rgba(0, 122, 255, 0.12);
+    --ios-accent-text: #FFFFFF;
   }
 
-  .dark {
-    /* Apple iOS Dark Tokens (True OLED Black) */
+  /* Accent Color Variants - Light Mode */
+  :root[data-accent="monochrome"], html[data-accent="monochrome"] {
+    --ios-accent: #000000;
+    --ios-accent-hover: #1C1C1E;
+    --ios-accent-subtle: rgba(0, 0, 0, 0.08);
+    --ios-accent-text: #FFFFFF;
+  }
+  :root[data-accent="green"], html[data-accent="green"] {
+    --ios-accent: #34C759;
+    --ios-accent-hover: #28A745;
+    --ios-accent-subtle: rgba(52, 199, 89, 0.14);
+    --ios-accent-text: #FFFFFF;
+  }
+  :root[data-accent="purple"], html[data-accent="purple"] {
+    --ios-accent: #5856D6;
+    --ios-accent-hover: #4745B8;
+    --ios-accent-subtle: rgba(88, 86, 214, 0.14);
+    --ios-accent-text: #FFFFFF;
+  }
+  :root[data-accent="orange"], html[data-accent="orange"] {
+    --ios-accent: #FF9500;
+    --ios-accent-hover: #E08500;
+    --ios-accent-subtle: rgba(255, 149, 0, 0.14);
+    --ios-accent-text: #FFFFFF;
+  }
+
+  /* Apple iOS Dark Tokens (True OLED Black) */
+  .dark, html.dark {
     --ios-bg: #000000;
     --ios-card: #1C1C1E;
     --ios-secondary: #2C2C2E;
@@ -34,6 +81,54 @@
     --ios-green: #30D158;
     --ios-red: #FF453A;
     --ios-orange: #FF9F0A;
+
+    /* Dynamic Apple Accent Token - Dark Mode (Default: Blue) */
+    --ios-accent: #0A84FF;
+    --ios-accent-hover: #0070E0;
+    --ios-accent-subtle: rgba(10, 132, 255, 0.18);
+    --ios-accent-text: #FFFFFF;
+  }
+
+  /* Accent Color Variants - Dark Mode */
+  .dark[data-accent="monochrome"], html.dark[data-accent="monochrome"] {
+    --ios-accent: #FFFFFF;
+    --ios-accent-hover: #E5E5EA;
+    --ios-accent-subtle: rgba(255, 255, 255, 0.16);
+    --ios-accent-text: #000000;
+  }
+  .dark[data-accent="green"], html.dark[data-accent="green"] {
+    --ios-accent: #30D158;
+    --ios-accent-hover: #26B34A;
+    --ios-accent-subtle: rgba(48, 209, 88, 0.2);
+    --ios-accent-text: #000000;
+  }
+  .dark[data-accent="purple"], html.dark[data-accent="purple"] {
+    --ios-accent: #5E5CE6;
+    --ios-accent-hover: #716EF2;
+    --ios-accent-subtle: rgba(94, 92, 230, 0.2);
+    --ios-accent-text: #FFFFFF;
+  }
+  .dark[data-accent="orange"], html.dark[data-accent="orange"] {
+    --ios-accent: #FF9F0A;
+    --ios-accent-hover: #FFB340;
+    --ios-accent-subtle: rgba(255, 159, 10, 0.2);
+    --ios-accent-text: #000000;
+  }
+
+  /* Pure Monochrome Theme Modifier (Hitam-Putih Murni) */
+  html[data-theme="monochrome"] {
+    --ios-bg: #000000;
+    --ios-card: #121214;
+    --ios-secondary: #222224;
+    --ios-tertiary: #333336;
+    --ios-border: #2A2A2E;
+    --ios-separator: #333336;
+    --ios-text: #FFFFFF;
+    --ios-subtext: #A1A1A6;
+    --ios-accent: #FFFFFF;
+    --ios-accent-hover: #E5E5EA;
+    --ios-accent-subtle: rgba(255, 255, 255, 0.16);
+    --ios-accent-text: #000000;
   }
 
   body {
@@ -43,10 +138,33 @@
     letter-spacing: -0.015em;
     background-color: var(--ios-bg);
     color: var(--ios-text);
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 }
 
-/* iOS OLED Dark & Apple Porcelain Light Themes */
+/* Accent Utility Classes */
+.bg-ios-accent {
+  background-color: var(--ios-accent) !important;
+  color: var(--ios-accent-text) !important;
+}
+.hover\:bg-ios-accent:hover {
+  background-color: var(--ios-accent-hover) !important;
+}
+.text-ios-accent {
+  color: var(--ios-accent) !important;
+}
+.border-ios-accent {
+  border-color: var(--ios-accent) !important;
+}
+.ring-ios-accent {
+  --tw-ring-color: var(--ios-accent) !important;
+}
+.bg-ios-accent-subtle {
+  background-color: var(--ios-accent-subtle) !important;
+  color: var(--ios-accent) !important;
+}
+
+/* iOS Background States */
 html.dark {
   background-color: #000000;
   color: #FFFFFF;
@@ -57,26 +175,31 @@ html:not(.dark) {
   color: #1C1C1E;
 }
 
-/* Apple iOS Glass Utility */
-.ios-glass {
-  background-color: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+html[data-theme="monochrome"] {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
 }
 
-.dark .ios-glass {
-  background-color: rgba(28, 28, 30, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+/* Apple iOS Glass Utility */
+.ios-glass {
+  background-color: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+}
+
+.dark .ios-glass, html[data-theme="monochrome"] .ios-glass {
+  background-color: rgba(24, 24, 27, 0.78);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
 }
 
 /* Apple iOS Inset Grouped Card Shadow */
 .ios-card-shadow {
-  box-shadow: 0 2px 14px 0 rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 14px 0 rgba(0, 0, 0, 0.05);
 }
 
-.dark .ios-card-shadow {
-  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.45);
+.dark .ios-card-shadow, html[data-theme="monochrome"] .ios-card-shadow {
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.55);
 }
 
 /* Custom smooth iOS scrollbar */
