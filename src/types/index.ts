@@ -30,6 +30,10 @@ export interface UserProfile {
   pin: string;
   biometricEnabled: boolean;
   twoFactorEnabled: boolean;
+  phoneVerified?: boolean;
+  phoneVerificationMethod?: 'whatsapp' | 'sms';
+  isMerchant?: boolean;
+  qrisNmid?: string;
 }
 
 export interface Transaction {
@@ -116,5 +120,36 @@ export interface SplitBillContact {
   phone: string;
   amount: number;
   isPaid?: boolean;
+}
+
+export interface QrisStandardPayload {
+  version: string;
+  isDynamic: boolean;
+  nmid: string;
+  merchantName: string;
+  merchantCity: string;
+  postalCode?: string;
+  recipientPhone: string;
+  recipientId: string;
+  amount?: number;
+  currency: string;
+  sessionId: string;
+  crc: string;
+  rawString: string;
+}
+
+export interface LiveSyncMessage {
+  type: 'QRIS_PAYMENT_INITIATED' | 'QRIS_PAYMENT_COMPLETED' | 'ACCOUNT_SWITCHED' | 'BALANCE_SYNC';
+  senderId: string;
+  senderName: string;
+  senderPhone: string;
+  recipientId: string;
+  recipientName: string;
+  recipientPhone: string;
+  amount: number;
+  transactionId: string;
+  sessionId: string;
+  timestamp: string;
+  note?: string;
 }
 

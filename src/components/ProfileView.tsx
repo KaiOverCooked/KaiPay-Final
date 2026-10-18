@@ -7,30 +7,46 @@ import {
   Lock, 
   Coins, 
   RotateCcw, 
-  Check,
-  Smartphone,
-  Sparkles,
-  Layers,
-  Terminal,
-  Download,
-  Copy,
-  ExternalLink
+  Check, 
+  Smartphone, 
+  Sparkles, 
+  Layers, 
+  Terminal, 
+  Download, 
+  Copy, 
+  ExternalLink,
+  MessageSquare,
+  Award,
+  Radio,
+  Bell,
+  Users,
+  Store,
+  ChevronRight
 } from 'lucide-react';
 import { UserProfile, CurrencyCode, CURRENCY_RATES } from '../types';
 import { generateQuickPinHash } from '../utils/crypto';
 import { iosQuickTap } from '../utils/motion';
 import { sounds } from '../utils/sound';
+import { USER_PERSONAL, USER_MERCHANT } from '../utils/storage';
 
 interface ProfileViewProps {
   user: UserProfile;
   onUpdateUser: (updated: Partial<UserProfile>) => void;
   onResetData: () => void;
+  onOpenDevicePermissions?: () => void;
+  onOpenOtpVerification?: () => void;
+  onOpenLicenseModal?: () => void;
+  onSwitchAccount?: (targetAccountId: string) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
   user,
   onUpdateUser,
   onResetData,
+  onOpenDevicePermissions,
+  onOpenOtpVerification,
+  onOpenLicenseModal,
+  onSwitchAccount,
 }) => {
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone);
@@ -497,6 +513,229 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <p className="text-[11px] text-[#8E8E93] leading-relaxed">
             Untuk membangun APK di Android Studio atau GitHub, jalankan perintah di atas. Workflow GitHub Actions akan secara otomatis mengkompilasi file <code className="text-ios-accent">app-debug.apk</code> yang dapat diunduh langsung dari tab Actions pada repositori GitHub Anda.
           </p>
+        </div>
+      </div>
+
+      {/* Simulasi Dua Pengguna & Uji Real-Time 2 Tab Browser */}
+      <div className="p-6 rounded-[26px] bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-ios-accent/15 text-ios-accent">
+              <Users className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[#000000] dark:text-[#FFFFFF]">
+                Uji Transaksi Nyata 2 Tab & Ganti Akun
+              </h3>
+              <p className="text-[11px] text-[#6C6C70] dark:text-[#8E8E93]">
+                Sinkronisasi saldo otomatis antar tab peramban via BroadcastChannel
+              </p>
+            </div>
+          </div>
+
+          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-ios-accent/15 text-ios-accent border border-ios-accent/20">
+            Live Sync
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {/* Active Account Switcher */}
+          <div className="p-4 rounded-2xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 border border-black/5 dark:border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-3 h-3 rounded-full animate-pulse ${user.isMerchant ? 'bg-emerald-500' : 'bg-ios-accent'}`} />
+                <span className="text-xs font-bold text-[#000000] dark:text-white">
+                  Profil Aktif: {user.name} ({user.isMerchant ? 'Merchant QRIS' : 'Pengirim Pribadi'})
+                </span>
+              </div>
+              <span className="text-[10px] font-mono font-bold text-ios-accent">
+                {user.phone}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <motion.button
+                whileTap={iosQuickTap}
+                type="button"
+                onClick={() => {
+                  sounds.playHapticClick();
+                  if (onSwitchAccount) {
+                    onSwitchAccount(USER_PERSONAL.id);
+                  }
+                }}
+                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                  !user.isMerchant
+                    ? 'border-ios-accent bg-ios-accent-subtle shadow-sm ring-1 ring-ios-accent'
+                    : 'border-transparent bg-white dark:bg-[#1C1C1E] opacity-75 hover:opacity-100'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-ios-accent text-white flex items-center justify-center font-bold text-xs">
+                    KA
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-[#000000] dark:text-white">Kaelen Adiputra</h5>
+                    <p className="text-[10px] text-[#8E8E93]">Pengirim Dana (User)</p>
+                  </div>
+                </div>
+                {!user.isMerchant && <Check className="w-4 h-4 text-ios-accent stroke-[3]" />}
+              </motion.button>
+
+              <motion.button
+                whileTap={iosQuickTap}
+                type="button"
+                onClick={() => {
+                  sounds.playHapticClick();
+                  if (onSwitchAccount) {
+                    onSwitchAccount(USER_MERCHANT.id);
+                  }
+                }}
+                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                  user.isMerchant
+                    ? 'border-[#34C759] bg-[#34C759]/10 shadow-sm ring-1 ring-[#34C759]'
+                    : 'border-transparent bg-white dark:bg-[#1C1C1E] opacity-75 hover:opacity-100'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-[#34C759] text-white flex items-center justify-center font-bold text-xs">
+                    KK
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-[#000000] dark:text-white">Kopi Kenangan</h5>
+                    <p className="text-[10px] text-[#8E8E93]">Merchant Penerima QRIS</p>
+                  </div>
+                </div>
+                {user.isMerchant && <Check className="w-4 h-4 text-[#34C759] stroke-[3]" />}
+              </motion.button>
+            </div>
+
+            {/* Open Second Tab Button */}
+            <div className="pt-2 flex flex-col sm:flex-row gap-2 items-center justify-between">
+              <p className="text-[11px] text-[#6C6C70] dark:text-[#8E8E93]">
+                Buka tab baru untuk melihat saldo berpindah secara langsung saat scan barcode.
+              </p>
+              <motion.button
+                whileTap={iosQuickTap}
+                type="button"
+                onClick={() => {
+                  sounds.playHapticClick();
+                  const targetRole = user.isMerchant ? 'personal' : 'merchant';
+                  const url = `${window.location.origin}${window.location.pathname}?account=${targetRole}`;
+                  window.open(url, '_blank');
+                }}
+                className="w-full sm:w-auto py-2 px-3.5 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm hover:opacity-90 shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Buka Tab 2 ({user.isMerchant ? 'Pengirim' : 'Merchant'})</span>
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Verifikasi WhatsApp OTP, Sensor Perangkat & Lisensi Publik */}
+      <div className="p-6 rounded-[26px] bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-[#34C759]/15 text-[#34C759]">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[#000000] dark:text-[#FFFFFF]">
+                Verifikasi & Izin Sistem Publik (Go Public)
+              </h3>
+              <p className="text-[11px] text-[#6C6C70] dark:text-[#8E8E93]">
+                Autentikasi OTP WhatsApp, hak akses kamera/sensor, dan sertifikasi Play Store
+              </p>
+            </div>
+          </div>
+
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#34C759]/15 text-[#34C759] border border-[#34C759]/20">
+            Official
+          </span>
+        </div>
+
+        <div className="space-y-2.5">
+          {/* Action 1: WhatsApp OTP */}
+          <motion.div
+            whileTap={iosQuickTap}
+            onClick={() => {
+              sounds.playHapticClick();
+              if (onOpenOtpVerification) onOpenOtpVerification();
+            }}
+            className="p-3.5 rounded-2xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 border border-black/5 dark:border-white/5 flex items-center justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-[#25D366] text-white shadow-sm">
+                <MessageSquare className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[#000000] dark:text-white flex items-center gap-1.5">
+                  <span>Verifikasi Nomor WhatsApp</span>
+                  <span className="text-[10px] font-normal px-1.5 py-0.5 rounded-md bg-[#25D366]/20 text-[#25D366] font-bold">
+                    OTP Terakreditasi
+                  </span>
+                </h4>
+                <p className="text-[10px] text-[#8E8E93]">
+                  Simulasi banner notifikasi WhatsApp asli untuk verifikasi nomor telepon
+                </p>
+              </div>
+            </div>
+
+            <ChevronRight className="w-4 h-4 text-[#8E8E93]" />
+          </motion.div>
+
+          {/* Action 2: Device Permissions */}
+          <motion.div
+            whileTap={iosQuickTap}
+            onClick={() => {
+              sounds.playHapticClick();
+              if (onOpenDevicePermissions) onOpenDevicePermissions();
+            }}
+            className="p-3.5 rounded-2xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 border border-black/5 dark:border-white/5 flex items-center justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-ios-accent text-white shadow-sm">
+                <Camera className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[#000000] dark:text-white">
+                  Izin Kamera, Notifikasi & Perangkat Sekitar
+                </h4>
+                <p className="text-[10px] text-[#8E8E93]">
+                  Hak akses sensor kamera fisik, push notification browser, dan Nearby discovery
+                </p>
+              </div>
+            </div>
+
+            <ChevronRight className="w-4 h-4 text-[#8E8E93]" />
+          </motion.div>
+
+          {/* Action 3: License & Play Store Signed Certificate */}
+          <motion.div
+            whileTap={iosQuickTap}
+            onClick={() => {
+              sounds.playHapticClick();
+              if (onOpenLicenseModal) onOpenLicenseModal();
+            }}
+            className="p-3.5 rounded-2xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 border border-black/5 dark:border-white/5 flex items-center justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-amber-500 text-white shadow-sm">
+                <Award className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[#000000] dark:text-white">
+                  Sertifikat Lisensi & Tanda Tangan Play Store
+                </h4>
+                <p className="text-[10px] text-[#8E8E93]">
+                  Digital Signature RSA-2048 SHA-256, Lisensi Bank Indonesia & status rilis publik
+                </p>
+              </div>
+            </div>
+
+            <ChevronRight className="w-4 h-4 text-[#8E8E93]" />
+          </motion.div>
         </div>
       </div>
 

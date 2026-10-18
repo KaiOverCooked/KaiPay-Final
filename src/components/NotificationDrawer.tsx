@@ -130,9 +130,9 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
                   </p>
                 </div>
               ) : (
-                notifications.map((notif) => (
+                notifications.map((notif, idx) => (
                   <motion.div
-                    key={notif.id}
+                    key={`${notif.id}-${idx}`}
                     whileTap={iosSubtleTap}
                     onClick={() => onSelectNotification(notif)}
                     className={`p-4 flex items-start gap-3.5 transition-colors cursor-pointer ${

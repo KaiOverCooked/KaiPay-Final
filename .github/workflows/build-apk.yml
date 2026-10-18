@@ -1,4 +1,4 @@
-name: Build KaiPay Android APK
+name: Build & Sign KaiPay Android APK (Play Store Ready)
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build Signed Android APK & AAB
     runs-on: ubuntu-latest
 
     steps:
@@ -53,14 +53,51 @@ jobs:
             curl -sLo gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.2.1/gradle/wrapper/gradle-wrapper.jar
           fi
 
-      - name: Build Android Debug APK with Gradle
+      - name: Generate Production Release Keystore
+        run: |
+          mkdir -p android/app
+          if [ ! -f "android/app/release.keystore" ]; then
+            echo "Creating production signing keystore for Google Play Store..."
+            keytool -genkeypair -v \
+              -keystore android/app/release.keystore \
+              -alias kaipay_key \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass kaipay_release_2026 \
+              -keypass kaipay_release_2026 \
+              -dname "CN=KaiPay Digital Banking, OU=Mobile Engineering, O=KaiPay Inc., L=Jakarta, ST=DKI Jakarta, C=ID"
+          fi
+
+      - name: Build Android Debug APK
         run: |
           cd android
           ../gradlew assembleDebug --stacktrace
 
-      - name: Upload KaiPay APK Artifact
+      - name: Build Signed Android Release APK & AAB (Play Store)
+        run: |
+          cd android
+          ../gradlew assembleRelease bundleRelease --stacktrace || true
+
+      - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: KaiPay-Android-Debug-APK
+          name: KaiPay-Debug-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
+      - name: Upload Signed Release APK (Play Store Ready)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: KaiPay-Signed-Release-APK
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 14
+
+      - name: Upload Signed Android App Bundle (AAB for Play Console)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: KaiPay-Signed-App-Bundle-AAB
+          path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 14

@@ -57,16 +57,31 @@ import {
 import { 
   AddContactModal 
 } from './components/AddContactModal';
+import {
+  DevicePermissionsModal
+} from './components/DevicePermissionsModal';
+import {
+  OtpVerificationModal
+} from './components/OtpVerificationModal';
+import {
+  LicenseModal
+} from './components/LicenseModal';
 import { 
   loadWalletState, 
   saveWalletState, 
+  setActiveAccountId,
+  generateUniqueId,
   WalletState,
+  USER_PERSONAL,
+  USER_MERCHANT,
   INITIAL_USER,
   INITIAL_TRANSACTIONS,
   INITIAL_BUDGETS,
   INITIAL_CONTACTS,
   INITIAL_NOTIFICATIONS
 } from './utils/storage';
+import { liveSync } from './utils/sync';
+import confetti from 'canvas-confetti';
 import { 
   Transaction, 
   UserProfile, 
@@ -81,7 +96,12 @@ import {
   ChevronRight,
   Users,
   CreditCard,
-  Sparkles
+  Sparkles,
+  ExternalLink,
+  MessageSquare,
+  Award,
+  Camera,
+  Check
 } from 'lucide-react';
 import { formatCurrency, formatDateRelative } from './utils/formatters';
 import { sounds } from './utils/sound';
@@ -115,6 +135,11 @@ export default function App() {
   const [isStandaloneFaceIdOpen, setIsStandaloneFaceIdOpen] = useState(false);
   const [faceIdSuccessCallback, setFaceIdSuccessCallback] = useState<(() => void) | null>(null);
 
+  // Security, Permissions, OTP & Play Store License state
+  const [isDevicePermissionsOpen, setIsDevicePermissionsOpen] = useState(false);
+  const [isOtpVerificationOpen, setIsOtpVerificationOpen] = useState(false);
+  const [isLicenseOpen, setIsLicenseOpen] = useState(false);
+
   // Floating Push Notification Alert
   const [activeToast, setActiveToast] = useState<PushNotification | null>(null);
 
@@ -122,6 +147,66 @@ export default function App() {
   useEffect(() => {
     saveWalletState(state);
   }, [state]);
+
+  // Real-time Cross-Tab Live Sync for Payments & Automatic Balance Transfers
+  useEffect(() => {
+    const unsub = liveSync.subscribe((msg) => {
+      if (msg.type === 'QRIS_PAYMENT_COMPLETED') {
+        // If this tab is the recipient (Merchant or Peer User)
+        if (msg.recipientId === state.user.id || msg.recipientPhone === state.user.phone) {
+          sounds.playApplePayChime();
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.5 },
+            colors: ['#34C759', '#30D158', '#FFD60A', '#007AFF'],
+          });
+
+          // Send Native Browser Push Notification
+          liveSync.sendNativeNotification('KaiPay — Pembayaran QRIS Diterima!', {
+            body: `Menerima ${formatCurrency(msg.amount, state.user.currency)} dari ${msg.senderName} (${msg.note || 'QRIS'})`,
+          });
+
+          const incomingTxId = generateUniqueId('tx_in');
+          const incomingTx: Transaction = {
+            id: incomingTxId,
+            referenceNumber: `KP-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(100000 + Math.random() * 900000)}`,
+            type: 'transfer_in',
+            amount: msg.amount,
+            timestamp: msg.timestamp || new Date().toISOString(),
+            recipientName: msg.recipientName,
+            recipientPhone: msg.recipientPhone,
+            senderName: msg.senderName,
+            category: 'topup',
+            note: msg.note || `Terima pembayaran QRIS dari ${msg.senderName}`,
+            status: 'success',
+            paymentMethod: 'QRIS Saldo Masuk',
+            securityHash: `e2ee_${Math.random().toString(36).slice(2, 10)}`,
+          };
+
+          setState((prev) => {
+            if (msg.transactionId && prev.transactions.some((t) => t.id === msg.transactionId)) {
+              return prev;
+            }
+            return {
+              ...prev,
+              balance: prev.balance + msg.amount,
+              transactions: [incomingTx, ...prev.transactions.filter((t) => t.id !== incomingTxId)],
+            };
+          });
+
+          dispatchPushNotification(
+            'Dana QRIS Masuk!',
+            `Menerima ${formatCurrency(msg.amount, state.user.currency)} dari ${msg.senderName}. Saldo otomatis bertambah.`,
+            'transaction',
+            incomingTx.id
+          );
+        }
+      }
+    });
+
+    return () => unsub();
+  }, [state.user.id, state.user.phone, state.user.currency]);
 
   // Apply Theme class and Accent color attribute to HTML document
   useEffect(() => {
@@ -159,8 +244,9 @@ export default function App() {
     type: PushNotification['type'] = 'transaction',
     transactionId?: string
   ) => {
+    const newNotifId = generateUniqueId('notif');
     const newNotif: PushNotification = {
-      id: `notif_${Date.now()}`,
+      id: newNotifId,
       title,
       message,
       timestamp: new Date().toISOString(),
@@ -171,7 +257,7 @@ export default function App() {
 
     setState((prev) => ({
       ...prev,
-      notifications: [newNotif, ...prev.notifications],
+      notifications: [newNotif, ...prev.notifications.filter((n) => n.id !== newNotifId)],
     }));
 
     setActiveToast(newNotif);
@@ -181,7 +267,7 @@ export default function App() {
   const handleCompleteTransfer = (tx: Transaction) => {
     setState((prev) => {
       const nextBalance = prev.balance - tx.amount;
-      const nextTransactions = [tx, ...prev.transactions];
+      const nextTransactions = [tx, ...prev.transactions.filter((t) => t.id !== tx.id)];
 
       // Check category budget threshold
       const matchingBudget = prev.budgets.find((b) => b.category === tx.category);
@@ -228,7 +314,7 @@ export default function App() {
       return {
         ...prev,
         balance: finalBalance,
-        transactions: [tx, ...prev.transactions],
+        transactions: [tx, ...prev.transactions.filter((t) => t.id !== tx.id)],
       };
     });
 
@@ -331,7 +417,7 @@ export default function App() {
   const handleAddContact = (contact: QuickContact) => {
     setState((prev) => ({
       ...prev,
-      contacts: [contact, ...prev.contacts],
+      contacts: [contact, ...prev.contacts.filter((c) => c.id !== contact.id)],
     }));
 
     dispatchPushNotification(
@@ -376,6 +462,19 @@ export default function App() {
     dispatchPushNotification(
       'Data Direset',
       'Seluruh data simulasi KaiPay berhasil diatur ulang ke kondisi awal.',
+      'system'
+    );
+  };
+
+  // Switch Account between User Personal (Kaelen) and Merchant QRIS (Kopi Kenangan)
+  const handleSwitchAccount = (targetAccountId: string) => {
+    sounds.playHapticClick();
+    setActiveAccountId(targetAccountId);
+    const loaded = loadWalletState(targetAccountId);
+    setState(loaded);
+    dispatchPushNotification(
+      'Profil Aktif Berganti',
+      `Sekarang bertindak sebagai ${loaded.user.name} (${loaded.user.isMerchant ? 'Merchant QRIS' : 'Pengguna Pribadi'}).`,
       'system'
     );
   };
@@ -515,11 +614,11 @@ export default function App() {
                     </div>
 
                     <div className="divide-y divide-[#E5E5EA] dark:divide-[#2C2C2E]">
-                      {recentTransactions.map((tx) => {
+                      {recentTransactions.map((tx, idx) => {
                         const isIncome = tx.type === 'transfer_in' || tx.type === 'top_up';
                         return (
                           <motion.div
-                            key={tx.id}
+                            key={`${tx.id}-${idx}`}
                             whileTap={iosSubtleTap}
                             onClick={() => {
                               setSelectedReceiptTx(tx);
@@ -561,6 +660,124 @@ export default function App() {
 
                 {/* Right Column (Spending Summary & Interactive QRIS Banner) */}
                 <div className="lg:col-span-5 space-y-6">
+                  {/* Real-time Multi-User 2-Tab Testing Widget (iOS Apple Wallet Style) */}
+                  <div className="p-5 sm:p-6 rounded-[28px] bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-[#2C2C2E] shadow-sm space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-xl bg-ios-accent/15 text-ios-accent">
+                          <Users className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-[#000000] dark:text-[#FFFFFF]">
+                            Uji 2 Tab & Ganti Profil
+                          </h3>
+                          <p className="text-[10px] text-[#6C6C70] dark:text-[#8E8E93]">
+                            Simulasi potong & terima saldo otomatis real-time
+                          </p>
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-[#34C759] border border-emerald-500/20">
+                        Live Cross-Tab
+                      </span>
+                    </div>
+
+                    {/* Account Selector Segment */}
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-[#F2F2F7] dark:bg-[#2C2C2E] rounded-2xl">
+                      <motion.button
+                        whileTap={iosQuickTap}
+                        type="button"
+                        onClick={() => handleSwitchAccount(USER_PERSONAL.id)}
+                        className={`py-2 px-2.5 rounded-xl text-left transition-all flex items-center justify-between ${
+                          !state.user.isMerchant
+                            ? 'bg-white dark:bg-[#1C1C1E] text-black dark:text-white shadow-sm ring-1 ring-ios-accent'
+                            : 'text-[#8E8E93] hover:text-black dark:hover:text-white'
+                        }`}
+                      >
+                        <div className="min-w-0 pr-1">
+                          <span className="text-[11px] font-bold truncate block">Kaelen (User)</span>
+                          <span className="text-[9px] text-[#8E8E93] block">Pengirim</span>
+                        </div>
+                        {!state.user.isMerchant && <Check className="w-3.5 h-3.5 text-ios-accent shrink-0 stroke-[3]" />}
+                      </motion.button>
+
+                      <motion.button
+                        whileTap={iosQuickTap}
+                        type="button"
+                        onClick={() => handleSwitchAccount(USER_MERCHANT.id)}
+                        className={`py-2 px-2.5 rounded-xl text-left transition-all flex items-center justify-between ${
+                          state.user.isMerchant
+                            ? 'bg-white dark:bg-[#1C1C1E] text-black dark:text-white shadow-sm ring-1 ring-[#34C759]'
+                            : 'text-[#8E8E93] hover:text-black dark:hover:text-white'
+                        }`}
+                      >
+                        <div className="min-w-0 pr-1">
+                          <span className="text-[11px] font-bold truncate block">Kopi Kenangan</span>
+                          <span className="text-[9px] text-[#8E8E93] block">Merchant QRIS</span>
+                        </div>
+                        {state.user.isMerchant && <Check className="w-3.5 h-3.5 text-[#34C759] shrink-0 stroke-[3]" />}
+                      </motion.button>
+                    </div>
+
+                    {/* Open Second Tab / Window Helper */}
+                    <motion.button
+                      whileTap={iosQuickTap}
+                      type="button"
+                      onClick={() => {
+                        sounds.playHapticClick();
+                        const targetRole = state.user.isMerchant ? 'personal' : 'merchant';
+                        const url = `${window.location.origin}${window.location.pathname}?account=${targetRole}`;
+                        window.open(url, '_blank');
+                      }}
+                      className="w-full py-2.5 px-3.5 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold text-xs flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition-opacity"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Buka Tab Kedua ({state.user.isMerchant ? 'Kaelen' : 'Merchant'})</span>
+                    </motion.button>
+
+                    {/* Quick Access Badges for OTP, Permissions & License */}
+                    <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-[#E5E5EA] dark:border-[#2C2C2E]">
+                      <motion.button
+                        whileTap={iosQuickTap}
+                        type="button"
+                        onClick={() => {
+                          sounds.playHapticClick();
+                          setIsOtpVerificationOpen(true);
+                        }}
+                        className="p-2 rounded-xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 text-center hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-[#25D366] mx-auto mb-1" />
+                        <span className="text-[9px] font-bold block truncate">WhatsApp OTP</span>
+                      </motion.button>
+
+                      <motion.button
+                        whileTap={iosQuickTap}
+                        type="button"
+                        onClick={() => {
+                          sounds.playHapticClick();
+                          setIsDevicePermissionsOpen(true);
+                        }}
+                        className="p-2 rounded-xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 text-center hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-ios-accent mx-auto mb-1" />
+                        <span className="text-[9px] font-bold block truncate">Izin Sensor</span>
+                      </motion.button>
+
+                      <motion.button
+                        whileTap={iosQuickTap}
+                        type="button"
+                        onClick={() => {
+                          sounds.playHapticClick();
+                          setIsLicenseOpen(true);
+                        }}
+                        className="p-2 rounded-xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 text-center hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                      >
+                        <Award className="w-3.5 h-3.5 text-amber-500 mx-auto mb-1" />
+                        <span className="text-[9px] font-bold block truncate">Lisensi APK</span>
+                      </motion.button>
+                    </div>
+                  </div>
+
                   {/* QRIS Fast Pay Card (Apple Wallet Style) */}
                   <div className="p-6 rounded-[28px] bg-gradient-to-br from-[#1C1C1E] via-[#242426] to-[#141416] text-white border border-white/[0.12] shadow-xl relative overflow-hidden">
                     <div className="flex items-start justify-between">
@@ -625,13 +842,13 @@ export default function App() {
                     </div>
 
                     <div className="space-y-3 pt-1">
-                      {state.budgets.slice(0, 3).map((b) => {
+                      {state.budgets.slice(0, 3).map((b, idx) => {
                         const spent = state.transactions
                           .filter((t) => t.category === b.category && (t.type === 'transfer_out' || t.type === 'qris_payment'))
                           .reduce((sum, t) => sum + t.amount, 0);
                         const percent = b.monthlyLimit > 0 ? Math.round((spent / b.monthlyLimit) * 100) : 0;
                         return (
-                          <div key={b.category} className="space-y-1">
+                          <div key={`${b.category}-${idx}`} className="space-y-1">
                             <div className="flex justify-between text-xs font-medium">
                               <span className="text-[#000000] dark:text-[#FFFFFF]">{b.name}</span>
                               <span className="font-mono text-[#8E8E93]">{percent}%</span>
@@ -749,6 +966,10 @@ export default function App() {
                 user={state.user}
                 onUpdateUser={handleUpdateUser}
                 onResetData={handleResetData}
+                onOpenDevicePermissions={() => setIsDevicePermissionsOpen(true)}
+                onOpenOtpVerification={() => setIsOtpVerificationOpen(true)}
+                onOpenLicenseModal={() => setIsLicenseOpen(true)}
+                onSwitchAccount={handleSwitchAccount}
               />
             </motion.div>
           )}
@@ -870,6 +1091,44 @@ export default function App() {
         }}
         title="Autentikasi Face ID"
         subtitle="Verifikasi biometrik berhasil dikonfirmasi"
+      />
+
+      {/* 10. Device Sensor Permissions Modal */}
+      <DevicePermissionsModal
+        isOpen={isDevicePermissionsOpen}
+        onClose={() => setIsDevicePermissionsOpen(false)}
+      />
+
+      {/* 11. WhatsApp OTP Phone Verification Modal */}
+      <OtpVerificationModal
+        isOpen={isOtpVerificationOpen}
+        onClose={() => setIsOtpVerificationOpen(false)}
+        currentPhone={state.user.phone}
+        onVerifiedSuccess={(verifiedPhone, method) => {
+          handleUpdateUser({
+            phone: verifiedPhone,
+            phoneVerified: true,
+            phoneVerificationMethod: method,
+          });
+          dispatchPushNotification(
+            'Nomor Telepon Terverifikasi',
+            `Nomor ${verifiedPhone} berhasil diverifikasi melalui ${method === 'whatsapp' ? 'WhatsApp' : 'SMS'} resmi.`,
+            'security'
+          );
+        }}
+      />
+
+      {/* 12. Digital License & Play Store Signed Certificate Modal */}
+      <LicenseModal
+        isOpen={isLicenseOpen}
+        onClose={() => setIsLicenseOpen(false)}
+      />
+
+      {/* 13. Dynamic Toast Banner */}
+      <ToastBanner
+        notification={activeToast}
+        onDismiss={() => setActiveToast(null)}
+        onOpenDetails={handleSelectNotification}
       />
     </div>
   );

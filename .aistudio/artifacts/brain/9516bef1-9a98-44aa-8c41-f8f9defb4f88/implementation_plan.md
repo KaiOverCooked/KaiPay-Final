@@ -1,119 +1,96 @@
-# Rencana Implementasi: Perbaikan & Penyempurnaan UI Estetik, Kai Card 3D Gesture, Fitur Teman, dan Build APK Android
+# Rencana Implementasi: Sistem QRIS Nyata Multi-Pengguna, OTP WhatsApp, Izin Perangkat, dan Lisensi Play Store
 
-Menindaklanjuti permintaan dan preferensi yang telah Anda konfirmasikan, berikut adalah rencana terstruktur untuk memperbaiki dan menyempurnakan aplikasi KaiPay:
-
----
-
-## 1. Perbaikan Tema Hitam-Putih (Monokrom) & Fitur Aksen Warna Dinamis
-
-### Masalah Saat Ini
-- Pemilihan warna aksen (`accentColor`: Blue, Monochrome, Green, Purple, Orange) di pengaturan belum diaplikasikan secara menyeluruh ke elemen-elemen tombol, badge, dan indikator aktif karena masih banyak kode yang mengunci warna `#007AFF`.
-- Tema "Hitam Putih" (Apple Monochrome) belum memberikan pengalaman monokrom titanium murni yang menyeluruh.
-
-### Solusi & Penerapan
-- **Sistem CSS Variables Dinamis (`--ios-accent`, `--ios-accent-rgb`, `--ios-accent-hover`)**:
-  - Diterapkan pada `:root` dan disinkronkan langsung saat pengguna mengganti aksen warna di Pengaturan Akun atau Navbar.
-  - Pilihan tema monokrom murni (Black & White Titanium): tombol primer menjadi hitam pekat (dark mode: putih bersih), border silver titanium halus, tanpa warna jenuh.
-  - Pilihan aksen warna:
-    - **Apple Blue** (`#007AFF`)
-    - **Monokrom Titanium** (`#000000` / `#FFFFFF`)
-    - **Apple Mint Green** (`#34C759`)
-    - **Apple Indigo** (`#5856D6`)
-    - **Action Orange** (`#FF9500`)
-- **Penyelarasan Warna Antarmuka**: Seluruh tombol aksi utama, tab aktif di dock bawah, segmented controls, toggle switch, dan highlight transaksi akan otomatis mengikuti variabel warna aksen yang dipilih.
+Dokumen ini merinci rencana teknis untuk mengimplementasikan sistem pembayaran QRIS interaktif yang dapat diuji langsung antar-pengguna dengan perpindahan saldo otomatis, alur verifikasi nomor telepon OTP WhatsApp, perizinan kamera dan notifikasi sistem, serta penandatanganan rilis Android (Keystore/Signing) dan lisensi publik siap Play Store.
 
 ---
 
-## 2. Penyempurnaan Kai Card 3D: Geser Tangan (Touch/Drag), Hapus Gyro & Cahaya Kanan
+## 1. Arsitektur Transaksi QRIS Antar-Pengguna & Sinkronisasi Saldo Otomatis
 
-### Masalah & Kebutuhan
-- Sensor gyroscope bawaan terkadang jittery atau tidak responsif di berbagai perangkat. Pengguna ingin interaksi geser langsung dengan jari / mouse.
-- Cahaya harus bersumber dari sisi kanan dengan efek specular reflection (kilau cahaya) yang dinamis mengikuti sudut geseran, serta memiliki kedalaman fisik ala Apple Card.
+### A. Format Standar QRIS (EMVCo / ASPI)
+- Mengembangkan pembuat payload QRIS dinamis dan statis standar Indonesia (NMID, Nama Merchant, Kode Kota, Nominal Transaksi, serta Sesi Referensi Unik).
+- Format payload QRIS mencakup:
+  - ID Pengguna Penerima (Merchant / Rekan)
+  - Nomor Telepon Penerima
+  - Nominal Tagihan (opsional pada QR statis, otomatis terkunci pada QR dinamis)
+  - Kode Sesi / ID Transaksi unik
 
-### Solusi & Penerapan
-- **Hapus Sensor Gyroscope**: Menghilangkan listener `deviceorientation`.
-- **Interaksi Geser Multi-Arah Bebas (Drag & Tilt with Physics)**:
-  - Menggunakan gestur drag touch & mouse cursor dengan redaman inersia pegas iOS (`damping: 25`, `stiffness: 280`).
-  - Membaca posisi relatif geseran jari pada kartu untuk menghitung sudut rotasi 3D $X$ dan $Y$.
-- **Pencahayaan Samping Kanan & Specular Sheen**:
-  - Layer refleksi cahaya ditempatkan di sisi kanan (`right: -20%`, radial gradient putih-emas halus).
-  - Saat kartu digeser ke kiri/kanan/atas/bawah, gradasi highlight menyapu permukaan titanium dengan kedalaman bayangan berlapis (*ambient occlusion* & *drop shadow* ganda).
-- **Mode Pratinjau Tumpukan Kartu ala Apple Wallet**:
-  - Menyediakan toggle tampilan tumpukan kartu (Apple Cash + Kai Card Titanium + Virtual Gold) yang dapat digeser dan dipilih secara bergantian.
-
----
-
-## 3. Penyempurnaan Fitur Teman Kontak (Quick Contacts)
-
-### Kebutuhan Pengguna
-- Riwayat transaksi khusus per kontak.
-- Aksi transfer instan satu klik.
-- Foto avatar kustom & badge favorit (bintang/pin).
-- Kategori grup kontak: **Semua**, **Teman**, **Keluarga**, **Bisnis/Rekan**.
-
-### Solusi & Penerapan
-- **Peningkatan Data Model Kontak**:
-  - Menambahkan properti `category` ('teman' | 'keluarga' | 'bisnis'), `isFavorite` (boolean), dan dukungan avatar kustom.
-- **Tampilan Kontak yang Lebih Rapi & Estetik**:
-  - Filter segmented pill: Semua, Favorit ★, Teman, Keluarga.
-  - Indikator badge bintang favorit yang disematkan di pojok avatar.
-- **Sheet Rincian Kontak (Contact Detail Sheet)**:
-  - Membuka modal profil kontak saat diklik.
-  - Menampilkan total mutasi transfer antara pengguna dan kontak tersebut, riwayat transaksi terakhir bersama kontak itu.
-  - Tombol aksi instan: "Kirim Uang Sekarang", "Bagi Tagihan (Split Bill)", dan "Hapus/Ubah Kontak".
+### B. Sinkronisasi Antar-Tab & Multi-Akun (Cross-Tab Live Sync)
+- Menggunakan `BroadcastChannel('kaipay_sync_channel')` dan event listener `window.addEventListener('storage')`.
+- Menyediakan **Dua Profil Pengguna Terpisah**:
+  1. **Pengguna Utama** (Khaerul - Saldo Awal Rp 2.850.000)
+  2. **Merchant / Pengguna B** (Kopi Kenangan Senopati / Rekan B - Saldo Awal Rp 500.000)
+- Menyediakan pengalih akun cepat (*Fast Account Switcher*) di bilah atas/pengaturan sehingga pengguna dapat membuka aplikasi di 2 tab browser berbeda untuk menguji transaksi nyata:
+  - Tab 1 membuka QR Penerima (Merchant).
+  - Tab 2 membuka Pemindai Kamera QRIS (Pengguna Utama).
+  - Saat Tab 2 menekan bayar dan autentikasi Face ID/PIN selesai:
+    - Saldo Tab 2 langsung terpotong.
+    - Sinyal broadcast dikirimkan secara instan ke Tab 1.
+    - Saldo Tab 1 bertambah otomatis saat itu juga disertai efek audio Apple Pay dan notifikasi penerimaan dana.
 
 ---
 
-## 4. Penataan Ulang & Perapian UI (Anti-Clutter, iOS 18 Aesthetic)
+## 2. Verifikasi Nomor Telepon & Alur OTP WhatsApp
 
-### Masalah Saat Ini
-- Banyak fitur baru yang bertumpuk membuat tampilan beranda terasa padat.
-
-### Solusi & Penerapan
-- **Penyelarasan Ruang & Hierarki Tipografi**:
-  - Mengurangi kepadatan margin dan padding sesuai standar iOS Inset Grouped layout.
-  - Menempatkan Dynamic Island secara proporsional dan tidak menutupi header utama.
-  - Tombol-tombol sekunder dirapikan ke dalam sub-menu atau floating dock yang minimalis.
-- **Konsistensi Animasi Pegas Apple**:
-  - Seluruh interaksi modal, sheet, klik kartu, dan transisi tab menggunakan kurva spring iOS (`type: 'spring', damping: 28, stiffness: 320`), mulus tanpa patah-patah.
+- **Layar Verifikasi Nomor Telepon iOS**:
+  - Input nomor telepon dengan validasi kode negara (+62).
+  - Pilihan metode pengiriman OTP: **WhatsApp** (Utama) dan **SMS**.
+- **Notifikasi OTP WhatsApp**:
+  - Menampilkan banner notifikasi interaktif ala WhatsApp resmi yang menampilkan 6 digit kode OTP dengan tombol "Salin" atau "Isi Otomatis".
+  - Tautan langsung `https://wa.me/` untuk opsi pengiriman pesan konfirmasi ke nomor pengguna.
+  - Form input 6 digit OTP khas Apple dengan hitung mundur 60 detik (*resend timer*) dan validasi kode.
+  - Setelah verifikasi berhasil, nomor telepon mendapatkan badge "Terverifikasi Resmi WhatsApp & Bank Indonesia".
 
 ---
 
-## 5. Konfigurasi Android Gradle Wrapper (gradlew) & GitHub Actions APK Build
+## 3. Sistem Perizinan Perangkat Lengkap (Kamera, Notifikasi, Perangkat Sekitar)
 
-### Kebutuhan
-- Struktur file Gradle Android standar yang siap dibuka di Android Studio.
-- File eksekusi `gradlew` dan `gradlew.bat` serta `gradle-wrapper.properties`.
-- Konfigurasi `capacitor.config.json` dan AndroidManifest.
-- Script workflow `.github/workflows/build-apk.yml` agar repositori GitHub dapat otomatis meng-compile dan merilis file `.apk` siap install di HP Android.
-
-### Struktur yang Disiapkan
-1. `android/`
-   - `gradlew` & `gradlew.bat`
-   - `gradle/wrapper/gradle-wrapper.properties`
-   - `build.gradle` (root project)
-   - `settings.gradle`
-   - `app/build.gradle` (konfigurasi SDK 34, namespace `com.kaipay.app`, versionName "1.0.0")
-   - `app/src/main/AndroidManifest.xml` (Permissions: Internet, Camera, Vibrate, Biometric)
-2. `capacitor.config.json`: Konfigurasi ID aplikasi `com.kaipay.app` dan direktori web build `dist`.
-3. `.github/workflows/build-apk.yml`: Pipeline CI/CD otomatis untuk build APK Android debug/release setiap push ke branch main, dengan output file `KaiPay.apk` yang dapat diunduh langsung dari tab Actions GitHub.
+- **Izin Kamera**:
+  - Modal izin transparan bergaya Apple iOS sebelum mengakses sensor kamera fisik (`navigator.mediaDevices.getUserMedia`).
+  - Penanganan status: Diizinkan, Ditolak, atau Kamera Tidak Ditemukan dengan panduan reset izin.
+- **Izin Notifikasi Web / Push**:
+  - Pemanggilan API native `Notification.requestPermission()`.
+  - Mengirim notifikasi sistem asli di bilah notifikasi desktop/ponsel saat pembayaran QRIS berhasil atau saat saldo masuk dari pengguna lain.
+- **Simulasi Izin Perangkat Sekitar (*Nearby Devices & Local Network*)**:
+  - Dialog izin Apple iOS untuk pendeteksian perangkat sekitar via Bluetooth/Local Network saat melakukan transfer kontak terdekat.
 
 ---
 
-## Diagram Alur Sistem yang Disederhanakan
+## 4. Penandatanganan Rilis Android (Release Signing) & Lisensi Siap Play Store
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    KAI PAY IOS ECOSYSTEM                   │
-├──────────────────────────────┬──────────────────────────────┤
-│       Tampilan & Tema        │         Kai Card 3D          │
-│ • Dark/Light Mode            │ • Touch Drag / Geser Jari    │
-│ • Monokrom Murni / Aksen iOS │ • Cahaya Samping Kanan       │
-│ • Variabel CSS --ios-accent  │ • Specular Sheen & Depth     │
-├──────────────────────────────┼──────────────────────────────┤
-│       Manajemen Kontak       │       Build Android APK      │
-│ • Filter Teman/Keluarga/Fav  │ • gradlew & Gradle Wrapper   │
-│ • Riwayat Mutasi per Kontak  │ • Android Studio Structure   │
-│ • Transfer Cepat 1-Klik      │ • GitHub Actions APK Pipeline│
-└──────────────────────────────┴──────────────────────────────┘
-```
+- **Android Keystore & Release Signing Configuration**:
+  - Konfigurasi `signingConfigs` pada `android/app/build.gradle`:
+    - Membuat profil signing `release` dengan variabel lingkungan atau file `keystore.properties`.
+    - Konfigurasi `buildTypes.release` dengan `signingConfig signingConfigs.release`.
+  - Menyediakan skrip pembentukan keystore rilis (`generate-keystore.sh` & petunjuk `keytool`).
+- **Pembaruan GitHub Actions (`build-apk.yml`)**:
+  - Menambahkan job build Release APK (`app-release.apk`) dan Android App Bundle (`app-release.aab`) yang merupakan format wajib unggah Google Play Store.
+- **Tampilan Lisensi & Tanda Tangan Kriptografi Publik**:
+  - Layar "Lisensi & Sertifikasi Publik" di menu Pengaturan:
+    - Nomor Lisensi Standar QRIS ASPI & Bank Indonesia.
+    - Sertifikat Tanda Tangan Digital SHA-256 / Play Console App Signing Certificate fingerprint.
+    - Lisensi Open Source (MIT) & Persyaratan Layanan Pengembang Publik.
+
+---
+
+## 5. Rencana Tahapan Eksekusi
+
+1. **Tahap 1: Sinkronisasi Multi-Pengguna & Mesin QRIS Nyata**
+   - Buat helper multi-akun di `src/utils/storage.ts` dan modul sinkronisasi `src/utils/sync.ts`.
+   - Perbarui `QrModal.tsx` untuk memproduksi barcode QRIS berstandar EMVCo dengan sesi pembayaran live.
+   - Hubungkan alur potong saldo pengirim dan penambahan saldo penerima secara otomatis.
+
+2. **Tahap 2: Modal Verifikasi OTP WhatsApp & Alur Registrasi**
+   - Buat komponen `OtpVerificationModal.tsx` bergaya Apple iOS dengan banner notifikasi WhatsApp.
+   - Hubungkan status verifikasi nomor telepon ke profil pengguna.
+
+3. **Tahap 3: Modul Perizinan Kamera, Notifikasi Sistem & Perangkat Sekitar**
+   - Buat komponen dialog izin `DevicePermissionsModal.tsx`.
+   - Sambungkan API native `Notification` browser untuk push notifikasi nyata.
+
+4. **Tahap 4: Konfigurasi Keystore Rilis, Lisensi Publik & Workflow Play Store**
+   - Konfigurasi `android/app/build.gradle` untuk release signing.
+   - Buat layar informasi Lisensi & Sertifikat Tanda Tangan Digital di `src/components/LicenseModal.tsx`.
+   - Perbarui `.github/workflows/build-apk.yml` untuk menghasilkan rilis yang ditandatangani.
+
+5. **Tahap 5: Verifikasi & Uji Kompilasi**
+   - Jalankan `compile_applet` dan `lint_applet` untuk menjamin tidak ada error.

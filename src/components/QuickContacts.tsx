@@ -130,9 +130,9 @@ export const QuickContacts: React.FC<QuickContactsProps> = ({
         </motion.button>
 
         {/* Contact List */}
-        {sortedContacts.map((contact) => (
+        {sortedContacts.map((contact, idx) => (
           <motion.button
-            key={contact.id}
+            key={`${contact.id}-${idx}`}
             whileTap={iosQuickTap}
             type="button"
             onClick={() => {
@@ -307,11 +307,11 @@ export const QuickContacts: React.FC<QuickContactsProps> = ({
                     </div>
                   ) : (
                     <div className="space-y-1.5">
-                      {contactTransactions.slice(0, 4).map((tx) => {
+                      {contactTransactions.slice(0, 4).map((tx, idx) => {
                         const isIncome = tx.type === 'transfer_in' || tx.type === 'top_up';
                         return (
                           <div
-                            key={tx.id}
+                            key={`${tx.id}-${idx}`}
                             className="p-3 rounded-xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 flex items-center justify-between text-xs"
                           >
                             <div className="flex items-center gap-2">

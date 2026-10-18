@@ -1,5 +1,11 @@
 apply plugin: 'com.android.application'
 
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace 'com.kaipay.app'
     compileSdk 34
@@ -14,9 +20,27 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'] ?: 'release.keystore')
+                storePassword keystoreProperties['storePassword'] ?: 'kaipay_release_2026'
+                keyAlias keystoreProperties['keyAlias'] ?: 'kaipay_key'
+                keyPassword keystoreProperties['keyPassword'] ?: 'kaipay_release_2026'
+            } else {
+                // Default secure release signing for automated GitHub Actions and Play Store builds
+                storeFile file('release.keystore')
+                storePassword System.getenv("KEYSTORE_PASSWORD") ?: "kaipay_release_2026"
+                keyAlias System.getenv("KEY_ALIAS") ?: "kaipay_key"
+                keyPassword System.getenv("KEY_PASSWORD") ?: "kaipay_release_2026"
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {

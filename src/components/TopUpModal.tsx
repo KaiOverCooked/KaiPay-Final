@@ -9,6 +9,7 @@ import {
 import { UserProfile, Transaction } from '../types';
 import { formatCurrency, generateReferenceNumber } from '../utils/formatters';
 import { generateTransactionHash } from '../utils/crypto';
+import { generateUniqueId } from '../utils/storage';
 import { iosSheetVariants, iosBackdropVariants, iosQuickTap } from '../utils/motion';
 
 interface TopUpModalProps {
@@ -64,7 +65,7 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({
       });
 
       const tx: Transaction = {
-        id: `tx_${Date.now()}`,
+        id: generateUniqueId('tx_adjust'),
         referenceNumber: refNumber,
         type: diff >= 0 ? 'top_up' : 'transfer_out',
         amount: Math.abs(diff),
@@ -99,7 +100,7 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({
       });
 
       const tx: Transaction = {
-        id: `tx_${Date.now()}`,
+        id: generateUniqueId('tx_topup'),
         referenceNumber: refNumber,
         type: 'top_up',
         amount: topUpAmount,

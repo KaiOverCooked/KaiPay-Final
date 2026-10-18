@@ -87,7 +87,7 @@ export const SplitBillModal: React.FC<SplitBillModalProps> = ({
     e.preventDefault();
     if (!newFriendName.trim()) return;
     const newContact: QuickContact = {
-      id: `custom_${Date.now()}`,
+      id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       name: newFriendName.trim(),
       phone: newFriendPhone.trim() || '0812-0000-0000',
       avatarUrl: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80`,
@@ -282,11 +282,11 @@ Terima kasih! ✨`;
 
               {/* Contact Avatars Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {contacts.map((contact) => {
+                {contacts.map((contact, idx) => {
                   const isSelected = selectedContacts.some((c) => c.id === contact.id);
                   return (
                     <button
-                      key={contact.id}
+                      key={`${contact.id}-${idx}`}
                       type="button"
                       onClick={() => handleToggleContact(contact)}
                       className={`flex items-center gap-2.5 p-2 rounded-2xl border text-left transition-all ${
@@ -338,8 +338,8 @@ Terima kasih! ✨`;
                     {formatCurrency(equalShare, user.currency)}
                   </span>
                 </div>
-                {selectedContacts.map((c) => (
-                  <div key={c.id} className="flex justify-between py-1 text-zinc-600 dark:text-zinc-400">
+                {selectedContacts.map((c, idx) => (
+                  <div key={`${c.id}-${idx}`} className="flex justify-between py-1 text-zinc-600 dark:text-zinc-400">
                     <span>Bagian {c.name}</span>
                     <span className="font-mono">{formatCurrency(equalShare, user.currency)}</span>
                   </div>

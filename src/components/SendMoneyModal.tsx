@@ -21,6 +21,8 @@ import { formatCurrency, generateReferenceNumber } from '../utils/formatters';
 import { generateTransactionHash, verifyPin } from '../utils/crypto';
 import { sounds } from '../utils/sound';
 import { FaceIdModal } from './FaceIdModal';
+import { liveSync } from '../utils/sync';
+import { executePeerPayment } from '../utils/storage';
 import { 
   iosSheetVariants, 
   iosBackdropVariants, 
@@ -34,7 +36,15 @@ interface SendMoneyModalProps {
   balance: number;
   user: UserProfile;
   contacts: QuickContact[];
-  preselectedRecipient?: { name: string; phone: string; amount?: number; note?: string } | null;
+  preselectedRecipient?: { 
+    name: string; 
+    phone: string; 
+    amount?: number; 
+    note?: string;
+    recipientId?: string;
+    sessionId?: string;
+    isQris?: boolean;
+  } | null;
   onCompleteTransfer: (transaction: Transaction) => void;
 }
 
@@ -147,21 +157,36 @@ export const SendMoneyModal: React.FC<SendMoneyModalProps> = ({
       timestamp,
     });
 
-    const newTx: Transaction = {
-      id: `tx_${Date.now()}`,
-      referenceNumber: refNumber,
-      type: 'transfer_out',
-      amount,
-      timestamp,
+    const isQris = preselectedRecipient?.isQris || category === 'makanan' || recipientPhone.includes('QRIS');
+    const recipientId = preselectedRecipient?.recipientId || 'usr_merchant_kopi';
+
+    // Execute peer storage update so recipient gets balance even in background/storage
+    const { senderTx } = executePeerPayment({
+      senderId: user.id,
+      senderName: user.name,
+      senderPhone: user.phone,
+      recipientId,
       recipientName,
       recipientPhone,
+      amount,
+      note: note.trim() || (isQris ? `Pembayaran QRIS ke ${recipientName}` : `Transfer ke ${recipientName}`),
+    });
+
+    // Broadcast payment event across tabs in real-time
+    liveSync.broadcast({
+      type: 'QRIS_PAYMENT_COMPLETED',
+      senderId: user.id,
       senderName: user.name,
-      category,
-      note: note.trim() || `Transfer ke ${recipientName}`,
-      status: 'success',
-      paymentMethod: 'KaiPay Saldo Virtual',
-      securityHash: hash,
-    };
+      senderPhone: user.phone,
+      recipientId,
+      recipientName,
+      recipientPhone,
+      amount,
+      transactionId: senderTx.id,
+      sessionId: preselectedRecipient?.sessionId || `SES_${Date.now()}`,
+      timestamp,
+      note: note.trim() || `Pembayaran QRIS ke ${recipientName}`,
+    });
 
     sounds.playApplePayChime();
     confetti({
@@ -171,7 +196,7 @@ export const SendMoneyModal: React.FC<SendMoneyModalProps> = ({
       colors: ['#007AFF', '#34C759', '#FF9500', '#5856D6'],
     });
 
-    onCompleteTransfer(newTx);
+    onCompleteTransfer(senderTx);
   };
 
   const handleBiometricAuth = () => {
@@ -305,9 +330,9 @@ export const SendMoneyModal: React.FC<SendMoneyModalProps> = ({
                     Daftar Teman & Kontak
                   </span>
                   <div className="space-y-1.5">
-                    {filteredContacts.map((contact) => (
+                    {filteredContacts.map((contact, idx) => (
                       <motion.button
-                        key={contact.id}
+                        key={`${contact.id}-${idx}`}
                         whileTap={iosQuickTap}
                         type="button"
                         onClick={() => handleSelectContact(contact)}

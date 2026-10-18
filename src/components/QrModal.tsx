@@ -23,7 +23,10 @@ import jsQR from 'jsqr';
 import { UserProfile, QrisScanHistoryItem } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import { parseQrData } from '../utils/qrParser';
+import { generateQrisString, parseQrisString } from '../utils/qris';
+import { liveSync } from '../utils/sync';
 import { sounds } from '../utils/sound';
+import confetti from 'canvas-confetti';
 import { 
   iosSheetVariants, 
   iosBackdropVariants, 
@@ -36,7 +39,15 @@ interface QrModalProps {
   onClose: () => void;
   user: UserProfile;
   initialTab?: 'scan' | 'generate' | 'history';
-  onScannedQr: (data: { name: string; phone: string; amount?: number; note?: string }) => void;
+  onScannedQr: (data: { 
+    name: string; 
+    phone: string; 
+    amount?: number; 
+    note?: string;
+    recipientId?: string;
+    sessionId?: string;
+    isQris?: boolean;
+  }) => void;
   onOpenSplitBillFromQr?: (data: { name: string; phone: string; amount?: number; note?: string }) => void;
 }
 
@@ -53,7 +64,18 @@ export const QrModal: React.FC<QrModalProps> = ({
   const [qrisHistory, setQrisHistory] = useState<QrisScanHistoryItem[]>(() => {
     try {
       const saved = localStorage.getItem('kaipay_qris_history');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: QrisScanHistoryItem[] = JSON.parse(saved);
+        const seen = new Set<string>();
+        const deduped: QrisScanHistoryItem[] = [];
+        parsed.forEach((item) => {
+          if (item && item.id && !seen.has(item.id)) {
+            seen.add(item.id);
+            deduped.push(item);
+          }
+        });
+        return deduped;
+      }
     } catch {}
     return [
       {
@@ -92,7 +114,32 @@ export const QrModal: React.FC<QrModalProps> = ({
   const [requestedAmountStr, setRequestedAmountStr] = useState('');
   const [customNote, setCustomNote] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copiedRawQris, setCopiedRawQris] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [livePaymentReceived, setLivePaymentReceived] = useState<{ amount: number; senderName: string } | null>(null);
+
+  // Subscribe to real-time incoming payments across browser tabs
+  useEffect(() => {
+    const unsub = liveSync.subscribe((msg) => {
+      if (
+        msg.type === 'QRIS_PAYMENT_COMPLETED' &&
+        (msg.recipientId === user.id || msg.recipientPhone === user.phone)
+      ) {
+        sounds.playApplePayChime();
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.5 },
+          colors: ['#34C759', '#30D158', '#FFD60A', '#007AFF'],
+        });
+        setLivePaymentReceived({
+          amount: msg.amount,
+          senderName: msg.senderName,
+        });
+      }
+    });
+    return () => unsub();
+  }, [user.id, user.phone]);
 
   // Refs
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -249,7 +296,20 @@ export const QrModal: React.FC<QrModalProps> = ({
     isScanningRef.current = false;
     playScanBeep();
 
-    const parsed = parseQrData(dataStr);
+    // Try standard EMVCo/ASPI QRIS first, then fallback
+    const qrisObj = parseQrisString(dataStr);
+    const parsed = qrisObj
+      ? {
+          name: qrisObj.merchantName,
+          phone: qrisObj.recipientPhone,
+          amount: qrisObj.amount,
+          note: qrisObj.isDynamic ? `QRIS ${qrisObj.merchantName}` : `Pembayaran QRIS`,
+          recipientId: qrisObj.recipientId,
+          sessionId: qrisObj.sessionId,
+          isQris: true,
+        }
+      : parseQrData(dataStr);
+
     stopCamera();
 
     // Auto-save to QRIS Scan History
@@ -259,7 +319,7 @@ export const QrModal: React.FC<QrModalProps> = ({
       'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
     const newHistoryItem: QrisScanHistoryItem = {
-      id: `qris_${Date.now()}`,
+      id: `qris_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       merchantName: parsed.name,
       phoneOrNmid: parsed.phone,
       amount: parsed.amount,
@@ -287,6 +347,9 @@ export const QrModal: React.FC<QrModalProps> = ({
         phone: parsed.phone,
         amount: parsed.amount,
         note: parsed.note,
+        recipientId: 'recipientId' in parsed ? parsed.recipientId : undefined,
+        sessionId: 'sessionId' in parsed ? parsed.sessionId : undefined,
+        isQris: true,
       });
     }, 280);
   }, [onScannedQr, playScanBeep, stopCamera]);
@@ -808,7 +871,7 @@ export const QrModal: React.FC<QrModalProps> = ({
               </motion.div>
             )}
 
-            {/* TAB 2: MY QR CODE GENERATOR */}
+            {/* TAB 2: MY QR CODE GENERATOR (Standard QRIS & Real-Time Sync) */}
             {activeTab === 'generate' && (
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
@@ -816,6 +879,42 @@ export const QrModal: React.FC<QrModalProps> = ({
                 transition={iosSpringTransition}
                 className="p-5 overflow-y-auto flex-1 space-y-4 text-center"
               >
+                {/* Real-time Payment Received Alert */}
+                {livePaymentReceived && (
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: -10 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-left flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold">
+                        <Check className="w-4 h-4 stroke-[3]" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black uppercase text-[#34C759] tracking-wider block">
+                          Pembayaran QRIS Diterima!
+                        </span>
+                        <p className="text-xs font-bold text-[#000000] dark:text-white">
+                          +{formatCurrency(livePaymentReceived.amount, user.currency)} dari {livePaymentReceived.senderName}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLivePaymentReceived(null)}
+                      className="p-1 text-[#8E8E93] hover:text-black dark:hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                )}
+
+                {/* Live Sync Status Indicator */}
+                <div className="flex items-center justify-center gap-2 py-1 px-3 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#34C759] text-[11px] font-medium mx-auto max-w-fit">
+                  <span className="w-2 h-2 rounded-full bg-[#34C759] animate-ping" />
+                  <span>Sistem QRIS Live Aktif (Siap Terima Pembayaran)</span>
+                </div>
+
                 <div className="max-w-[280px] mx-auto p-6 rounded-[28px] bg-white text-black shadow-xl border border-[#E5E5EA] flex flex-col items-center">
                   <div className="flex items-center gap-1.5 mb-2">
                     <span className="text-sm font-bold tracking-tight">KaiPay</span>
@@ -825,7 +924,7 @@ export const QrModal: React.FC<QrModalProps> = ({
                   </div>
 
                   <h4 className="text-sm font-bold text-black">{user.name}</h4>
-                  <p className="text-[11px] font-mono text-[#6C6C70] mb-4">{user.phone}</p>
+                  <p className="text-[11px] font-mono text-[#6C6C70] mb-3">{user.phone}</p>
 
                   <div className="p-2 bg-white rounded-2xl ring-4 ring-black/5">
                     <svg
@@ -897,7 +996,7 @@ export const QrModal: React.FC<QrModalProps> = ({
                   )}
 
                   <span className="text-[10px] text-[#8E8E93] mt-3 font-mono">
-                    NMID: ID1982019481 · KaiPay Standar Nasional
+                    NMID: {user.qrisNmid || 'ID1020088910022'} · Standar ASPI Bank Indonesia
                   </span>
                 </div>
 
@@ -914,7 +1013,7 @@ export const QrModal: React.FC<QrModalProps> = ({
                       value={requestedAmountStr}
                       onChange={(e) => setRequestedAmountStr(e.target.value.replace(/\D/g, ''))}
                       placeholder="Masukkan nominal bebas"
-                      className="w-full h-11 pl-11 pr-4 rounded-xl bg-[#767680]/12 dark:bg-[#767680]/24 border border-transparent text-xs font-mono font-medium text-[#000000] dark:text-[#FFFFFF] placeholder-[#8E8E93] focus:bg-white dark:focus:bg-[#1C1C1E] focus:outline-none focus:ring-2 focus:ring-[#007AFF] transition-all"
+                      className="w-full h-11 pl-11 pr-4 rounded-xl bg-[#767680]/12 dark:bg-[#767680]/24 border border-transparent text-xs font-mono font-medium text-[#000000] dark:text-[#FFFFFF] placeholder-[#8E8E93] focus:bg-white dark:focus:bg-[#1C1C1E] focus:outline-none focus:ring-2 focus:ring-ios-accent transition-all"
                     />
                   </div>
 
@@ -924,7 +1023,10 @@ export const QrModal: React.FC<QrModalProps> = ({
                       <button
                         key={quickAmt}
                         type="button"
-                        onClick={() => setRequestedAmountStr(quickAmt.toString())}
+                        onClick={() => {
+                          sounds.playHapticClick();
+                          setRequestedAmountStr(quickAmt.toString());
+                        }}
                         className="py-1 px-2.5 rounded-lg bg-[#F2F2F7] dark:bg-[#2C2C2E] text-[11px] font-mono font-medium text-[#000000] dark:text-[#FFFFFF] hover:bg-[#E5E5EA] dark:hover:bg-[#3A3A3C] transition-colors whitespace-nowrap"
                       >
                         +{formatCurrency(quickAmt, user.currency)}
@@ -937,7 +1039,7 @@ export const QrModal: React.FC<QrModalProps> = ({
                     value={customNote}
                     onChange={(e) => setCustomNote(e.target.value)}
                     placeholder="Catatan permintaan (misal: Makan siang)"
-                    className="w-full h-10 px-3.5 rounded-xl bg-[#767680]/12 dark:bg-[#767680]/24 border border-transparent text-xs font-medium text-[#000000] dark:text-[#FFFFFF] placeholder-[#8E8E93] focus:bg-white dark:focus:bg-[#1C1C1E] focus:outline-none focus:ring-2 focus:ring-[#007AFF] transition-all mt-1"
+                    className="w-full h-10 px-3.5 rounded-xl bg-[#767680]/12 dark:bg-[#767680]/24 border border-transparent text-xs font-medium text-[#000000] dark:text-[#FFFFFF] placeholder-[#8E8E93] focus:bg-white dark:focus:bg-[#1C1C1E] focus:outline-none focus:ring-2 focus:ring-ios-accent transition-all mt-1"
                   />
                 </div>
 
@@ -945,18 +1047,30 @@ export const QrModal: React.FC<QrModalProps> = ({
                   <motion.button
                     whileTap={iosQuickTap}
                     type="button"
-                    onClick={handleCopyQrLink}
+                    onClick={() => {
+                      const qrisStr = generateQrisString({
+                        merchantName: user.name,
+                        phone: user.phone,
+                        userId: user.id,
+                        amount: requestedAmountStr ? parseInt(requestedAmountStr, 10) : undefined,
+                        nmid: user.qrisNmid,
+                      });
+                      navigator.clipboard.writeText(qrisStr);
+                      setCopiedRawQris(true);
+                      sounds.playHapticClick();
+                      setTimeout(() => setCopiedRawQris(false), 2000);
+                    }}
                     className="flex items-center justify-center gap-2 py-3 px-4 rounded-full bg-[#F2F2F7] dark:bg-[#2C2C2E] hover:bg-[#E5E5EA] dark:hover:bg-[#3A3A3C] text-[#000000] dark:text-[#FFFFFF] text-xs font-semibold transition-colors"
                   >
-                    {copied ? <Check className="w-4 h-4 text-[#34C759]" /> : <Copy className="w-4 h-4" />}
-                    <span>{copied ? 'Tersalin!' : 'Salin Tautan'}</span>
+                    {copiedRawQris ? <Check className="w-4 h-4 text-[#34C759]" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedRawQris ? 'Tersalin!' : 'Salin String QRIS'}</span>
                   </motion.button>
 
                   <motion.button
                     whileTap={iosQuickTap}
                     type="button"
                     onClick={handleDownloadQr}
-                    className="flex items-center justify-center gap-2 py-3 px-4 rounded-full bg-[#007AFF] hover:bg-[#0062CC] text-white text-xs font-semibold transition-colors shadow-sm"
+                    className="flex items-center justify-center gap-2 py-3 px-4 rounded-full bg-ios-accent hover:bg-ios-accent/90 text-white text-xs font-semibold transition-colors shadow-sm"
                   >
                     {downloadSuccess ? <Check className="w-4 h-4 text-white" /> : <Download className="w-4 h-4" />}
                     <span>{downloadSuccess ? 'Tersimpan!' : 'Unduh QR'}</span>
@@ -1007,9 +1121,9 @@ export const QrModal: React.FC<QrModalProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {qrisHistory.map((item) => (
+                    {qrisHistory.map((item, idx) => (
                       <div
-                        key={item.id}
+                        key={`${item.id}-${idx}`}
                         className="p-3.5 rounded-2xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 border border-black/5 dark:border-white/5 space-y-2.5 transition-colors"
                       >
                         <div className="flex items-start justify-between">

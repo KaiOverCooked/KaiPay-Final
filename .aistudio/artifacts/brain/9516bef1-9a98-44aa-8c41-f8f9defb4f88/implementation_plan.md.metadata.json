@@ -1,6 +1,6 @@
 {
-  "summary": "Rencana implementasi menyeluruh untuk perbaikan dan penyempurnaan KaiPay:\n1. Perbaikan tema hitam putih (monochrome) dan fitur warna aksen iOS dinamis.\n2. Rekayasa ulang Kai Card 3D: geser bebas dengan jari/mouse (touch drag), hapus gyro, pencahayaan di samping kanan, pantulan cahaya realistis & kedalaman Apple.\n3. Penyempurnaan fitur teman kontak: filter grup (Teman/Keluarga), badge favorit, foto kustom, modal rincian kontak dengan riwayat transaksi dan transfer instan.\n4. Perapian UI agar lebih bersih, elegan, dan estetik ala iOS 18 tanpa clutter.\n5. Setup Android Gradle Wrapper (gradlew) dan GitHub Actions Workflow untuk build APK KaiPay.",
-  "updatedAt": "2026-10-14T23:50:05.893410029Z",
+  "summary": "Rencana implementasi sistem QRIS transaksi nyata multi-pengguna dengan transfer saldo otomatis, verifikasi nomor telepon OTP WhatsApp, izin kamera/notifikasi perangkat, serta penandatanganan aplikasi Android (release keystore) dan lisensi Play Store.",
+  "updatedAt": "2026-10-15T17:41:53.186413175Z",
   "requestFeedback": true,
   "userFacing": true
 }

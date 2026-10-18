@@ -220,7 +220,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         </div>
 
         <div className="space-y-3 pt-2">
-          {budgets.map((b) => {
+          {budgets.map((b, idx) => {
             const spent = categoryExpenses[b.category] || 0;
             const percent = b.monthlyLimit > 0 ? Math.round((spent / b.monthlyLimit) * 100) : 0;
             const isWarning = percent >= 80 && percent < 100;
@@ -229,7 +229,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
             return (
               <div
-                key={b.category}
+                key={`${b.category}-${idx}`}
                 className="p-4 rounded-2xl bg-[#F2F2F7] dark:bg-[#2C2C2E]/60 border border-transparent transition-all"
               >
                 <div className="flex items-center justify-between mb-2">

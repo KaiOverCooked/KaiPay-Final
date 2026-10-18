@@ -53,7 +53,7 @@ export const AddContactModal: React.FC<AddContactModalProps> = ({
 
     const chosenAvatar = avatarUrl || presetAvatars[Math.floor(Math.random() * presetAvatars.length)];
     const newContact: QuickContact = {
-      id: `cnt_${Date.now()}`,
+      id: `cnt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       name: name.trim(),
       phone: phone.trim(),
       avatarUrl: chosenAvatar,

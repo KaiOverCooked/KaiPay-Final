@@ -168,11 +168,11 @@ export const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({
             </motion.button>
           </div>
         ) : (
-          filteredTransactions.map((tx) => {
+          filteredTransactions.map((tx, idx) => {
             const isIncome = tx.type === 'transfer_in' || tx.type === 'top_up';
             return (
               <motion.div
-                key={tx.id}
+                key={`${tx.id}-${idx}`}
                 whileTap={iosSubtleTap}
                 onClick={() => onSelectTransaction(tx)}
                 className="p-4 sm:p-5 flex items-center justify-between hover:bg-black/[0.02] dark:hover:bg-white/[0.03] transition-colors cursor-pointer group"
