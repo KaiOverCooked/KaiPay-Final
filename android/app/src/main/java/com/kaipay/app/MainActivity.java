@@ -3,9 +3,14 @@ package com.kaipay.app;
 import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.webkit.ConsoleMessage;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -13,9 +18,11 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.webkit.WebViewAssetLoader;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = "KaiPayMainActivity";
     private static final int CAMERA_PERMISSION_REQUEST = 101;
     private WebView webView;
     private PermissionRequest pendingPermissionRequest;
@@ -42,8 +49,35 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowFileAccess(true);
         settings.setLoadsImagesAutomatically(true);
 
-        webView.setWebViewClient(new WebViewClient());
+        // Configure AndroidX WebViewAssetLoader to serve bundled web assets over virtual HTTPS origin.
+        // This solves origin restrictions, CORS, and ES Module script blocking on file:// scheme.
+        final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
+            .setDomain("appassets.androidplatform.net")
+            .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+            .build();
+
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                super.onReceivedError(view, request, error);
+                Log.e("KaiPayWebView", "Error loading " + request.getUrl() + ": " + error.getDescription() + " (Code: " + error.getErrorCode() + ")");
+            }
+        });
+
         webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+                Log.d("KaiPayConsole", consoleMessage.message() + " -- Line "
+                    + consoleMessage.lineNumber() + " of "
+                    + consoleMessage.sourceId());
+                return true;
+            }
+
             @Override
             public void onPermissionRequest(final PermissionRequest request) {
                 runOnUiThread(() -> {
@@ -68,8 +102,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Load built web assets or live server
-        webView.loadUrl("file:///android_asset/dist/index.html");
+        // Load built web assets via secure HTTPS virtual origin
+        webView.loadUrl("https://appassets.androidplatform.net/assets/dist/index.html");
     }
 
     @Override

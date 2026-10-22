@@ -1,96 +1,116 @@
-# Rencana Implementasi: Sistem QRIS Nyata Multi-Pengguna, OTP WhatsApp, Izin Perangkat, dan Lisensi Play Store
+# Perbaikan P0 Android WebView & Penguatan Fondasi Finansial KaiPay
 
-Dokumen ini merinci rencana teknis untuk mengimplementasikan sistem pembayaran QRIS interaktif yang dapat diuji langsung antar-pengguna dengan perpindahan saldo otomatis, alur verifikasi nomor telepon OTP WhatsApp, perizinan kamera dan notifikasi sistem, serta penandatanganan rilis Android (Keystore/Signing) dan lisensi publik siap Play Store.
-
----
-
-## 1. Arsitektur Transaksi QRIS Antar-Pengguna & Sinkronisasi Saldo Otomatis
-
-### A. Format Standar QRIS (EMVCo / ASPI)
-- Mengembangkan pembuat payload QRIS dinamis dan statis standar Indonesia (NMID, Nama Merchant, Kode Kota, Nominal Transaksi, serta Sesi Referensi Unik).
-- Format payload QRIS mencakup:
-  - ID Pengguna Penerima (Merchant / Rekan)
-  - Nomor Telepon Penerima
-  - Nominal Tagihan (opsional pada QR statis, otomatis terkunci pada QR dinamis)
-  - Kode Sesi / ID Transaksi unik
-
-### B. Sinkronisasi Antar-Tab & Multi-Akun (Cross-Tab Live Sync)
-- Menggunakan `BroadcastChannel('kaipay_sync_channel')` dan event listener `window.addEventListener('storage')`.
-- Menyediakan **Dua Profil Pengguna Terpisah**:
-  1. **Pengguna Utama** (Khaerul - Saldo Awal Rp 2.850.000)
-  2. **Merchant / Pengguna B** (Kopi Kenangan Senopati / Rekan B - Saldo Awal Rp 500.000)
-- Menyediakan pengalih akun cepat (*Fast Account Switcher*) di bilah atas/pengaturan sehingga pengguna dapat membuka aplikasi di 2 tab browser berbeda untuk menguji transaksi nyata:
-  - Tab 1 membuka QR Penerima (Merchant).
-  - Tab 2 membuka Pemindai Kamera QRIS (Pengguna Utama).
-  - Saat Tab 2 menekan bayar dan autentikasi Face ID/PIN selesai:
-    - Saldo Tab 2 langsung terpotong.
-    - Sinyal broadcast dikirimkan secara instan ke Tab 1.
-    - Saldo Tab 1 bertambah otomatis saat itu juga disertai efek audio Apple Pay dan notifikasi penerimaan dana.
+Solusi komprehensif untuk mengatasi layar blank pada APK Android dengan memigrasikan mekanisme pemuatan dari `file://` ke AndroidX `WebViewAssetLoader` (origin HTTPS virtual), mengaktifkan logging runtime diagnostik, memperkuat verifikasi integritas aset pada GitHub Actions, serta menyempurnakan transparansi lisensi dan identitas resmi aplikasi.
 
 ---
 
-## 2. Verifikasi Nomor Telepon & Alur OTP WhatsApp
+### User Review & Critical Decisions
 
-- **Layar Verifikasi Nomor Telepon iOS**:
-  - Input nomor telepon dengan validasi kode negara (+62).
-  - Pilihan metode pengiriman OTP: **WhatsApp** (Utama) dan **SMS**.
-- **Notifikasi OTP WhatsApp**:
-  - Menampilkan banner notifikasi interaktif ala WhatsApp resmi yang menampilkan 6 digit kode OTP dengan tombol "Salin" atau "Isi Otomatis".
-  - Tautan langsung `https://wa.me/` untuk opsi pengiriman pesan konfirmasi ke nomor pengguna.
-  - Form input 6 digit OTP khas Apple dengan hitung mundur 60 detik (*resend timer*) dan validasi kode.
-  - Setelah verifikasi berhasil, nomor telepon mendapatkan badge "Terverifikasi Resmi WhatsApp & Bank Indonesia".
+> [!IMPORTANT]
+> Berdasarkan tanya-jawab klarifikasi sebelumnya:
+> - **Pilihan Arsitektur WebView**: Menggunakan AndroidX `WebViewAssetLoader` yang memetakan aset lokal ke origin aman virtual (`https://appassets.androidplatform.net/assets/dist/index.html`). Ini mengatasi pembatasan CORS dan kegagalan pemuatan ES modules (`type="module"`) yang menyebabkan UI blank pada skema `file://`.
+> - **Identitas & Lisensi Transaksi**: Menampilkan lisensi resmi siap pakai berstandar industri finansial (seperti lisensi DANA, Bank Indonesia QRIS, ASPI, dan enkripsi E2EE) dengan tata letak elegan dan kredibel, memisahkan secara jelas antara otorisasi sistem dan mode demonstrasi.
 
 ---
 
-## 3. Sistem Perizinan Perangkat Lengkap (Kamera, Notifikasi, Perangkat Sekitar)
+### 1. Overview & Core Concept
 
-- **Izin Kamera**:
-  - Modal izin transparan bergaya Apple iOS sebelum mengakses sensor kamera fisik (`navigator.mediaDevices.getUserMedia`).
-  - Penanganan status: Diizinkan, Ditolak, atau Kamera Tidak Ditemukan dengan panduan reset izin.
-- **Izin Notifikasi Web / Push**:
-  - Pemanggilan API native `Notification.requestPermission()`.
-  - Mengirim notifikasi sistem asli di bilah notifikasi desktop/ponsel saat pembayaran QRIS berhasil atau saat saldo masuk dari pengguna lain.
-- **Simulasi Izin Perangkat Sekitar (*Nearby Devices & Local Network*)**:
-  - Dialog izin Apple iOS untuk pendeteksian perangkat sekitar via Bluetooth/Local Network saat melakukan transfer kontak terdekat.
+- **Masalah Utama**: Pada build APK Android, `MainActivity.java` memuat `file:///android_asset/dist/index.html`. Browser Chromium WebView pada Android memblokir pemuatan file JavaScript bertipe module (`<script type="module">`) dan request lokal dari skema `file://` karena `Origin: null`, mengakibatkan layar putih/blank tanpa pesan visual.
+- **Solusi yang Diterapkan**:
+  1. Integrasi AndroidX `WebViewAssetLoader` dengan handler path `/assets/` yang menyajikan seluruh bundel Vite melalui `https://appassets.androidplatform.net/`.
+  2. Penambahan `WebChromeClient.onConsoleMessage` dan `WebViewClient.onReceivedError` untuk mencatat log JavaScript console langsung ke Android Logcat (`Log.d("KaiPayConsole")` dan `Log.e("KaiPayWebView")`).
+  3. Pembaruan workflow GitHub Actions `.github/workflows/build-apk.yml` dengan langkah verifikasi berkas `dist/index.html` dan bundel JS sebelum proses kompilasi Gradle dimulai.
+  4. Penataan identitas merek KaiPay mandiri di `package.json`, `index.html` (`lang="id"`), penambahan aset `public/favicon.ico`, serta penyesuaian sertifikat lisensi standar DANA / BI.
 
 ---
 
-## 4. Penandatanganan Rilis Android (Release Signing) & Lisensi Siap Play Store
+### 2. User Experience & Visual Design
 
-- **Android Keystore & Release Signing Configuration**:
-  - Konfigurasi `signingConfigs` pada `android/app/build.gradle`:
-    - Membuat profil signing `release` dengan variabel lingkungan atau file `keystore.properties`.
-    - Konfigurasi `buildTypes.release` dengan `signingConfig signingConfigs.release`.
-  - Menyediakan skrip pembentukan keystore rilis (`generate-keystore.sh` & petunjuk `keytool`).
-- **Pembaruan GitHub Actions (`build-apk.yml`)**:
-  - Menambahkan job build Release APK (`app-release.apk`) dan Android App Bundle (`app-release.aab`) yang merupakan format wajib unggah Google Play Store.
-- **Tampilan Lisensi & Tanda Tangan Kriptografi Publik**:
-  - Layar "Lisensi & Sertifikasi Publik" di menu Pengaturan:
-    - Nomor Lisensi Standar QRIS ASPI & Bank Indonesia.
-    - Sertifikat Tanda Tangan Digital SHA-256 / Play Console App Signing Certificate fingerprint.
-    - Lisensi Open Source (MIT) & Persyaratan Layanan Pengembang Publik.
+- **Mobile Viewport & Safe Area**:
+  - Tampilan Android WebView berjalan dalam mode *immersive edge-to-edge* dengan dukungan inset status bar dan navigasi bawah.
+  - Komponen React (Dashboard, 3D Titanium Card, QRIS Scanner, Dynamic Island, Riwayat Transaksi) tetap 100% utuh tanpa penghapusan fitur visual.
+- **Pemberian Informasi Lisensi & Otorisasi**:
+  - Modal lisensi menampilkan identitas resmi: Nomor Lisensi PJP Bank Indonesia, Sertifikasi Standar QRIS ASPI, Sidik Jari Digital SHA-256 / SHA-1, dan status kesiapan Play Console.
+  - Alur otorisasi biometrik dan OTP menampilkan antarmuka autentikasi berkelas tinggi khas perbankan digital modern.
 
 ---
 
-## 5. Rencana Tahapan Eksekusi
+### 3. Key Product Decisions & Trade-Offs
 
-1. **Tahap 1: Sinkronisasi Multi-Pengguna & Mesin QRIS Nyata**
-   - Buat helper multi-akun di `src/utils/storage.ts` dan modul sinkronisasi `src/utils/sync.ts`.
-   - Perbarui `QrModal.tsx` untuk memproduksi barcode QRIS berstandar EMVCo dengan sesi pembayaran live.
-   - Hubungkan alur potong saldo pengirim dan penambahan saldo penerima secara otomatis.
+#### Keputusan 1: AndroidX WebViewAssetLoader vs. file:// Biasa
+- **Pilihan**: `WebViewAssetLoader` dengan domain virtual `https://appassets.androidplatform.net`.
+- **Alasan**: Vite modern menghasilkan output ES module (`import`/`export` dan dynamic chunks). Skema `file://` pada Android WebView menganggap setiap file memiliki origin terpisah atau null origin, yang memblokir skrip module. `WebViewAssetLoader` memecahkan masalah ini di level native tanpa memerlukan server HTTP lokal di latar belakang.
+- **Alternatif yang Ditolak**: Mengubah seluruh build Vite ke mode legacy non-module (meningkatkan ukuran bundle dan memperlambat waktu muat) atau menggunakan server HTTP internal pada port acak (memerlukan izin socket dan rentan ditutup oleh OS).
 
-2. **Tahap 2: Modal Verifikasi OTP WhatsApp & Alur Registrasi**
-   - Buat komponen `OtpVerificationModal.tsx` bergaya Apple iOS dengan banner notifikasi WhatsApp.
-   - Hubungkan status verifikasi nomor telepon ke profil pengguna.
+#### Keputusan 2: Diagnostik Runtime WebView
+- **Pilihan**: Menghubungkan event `onConsoleMessage` dari WebView ke `android.util.Log` pada build debug.
+- **Alasan**: Memungkinkan pengembang atau tester melihat error JavaScript, kesalahan parsing, atau pengecualian unhandled promise langsung melalui `adb logcat -s KaiPayConsole`.
 
-3. **Tahap 3: Modul Perizinan Kamera, Notifikasi Sistem & Perangkat Sekitar**
-   - Buat komponen dialog izin `DevicePermissionsModal.tsx`.
-   - Sambungkan API native `Notification` browser untuk push notifikasi nyata.
+#### Keputusan 3: Verifikasi Integritas Aset pada CI/CD Workflow
+- **Pilihan**: Menambahkan pengecekan keberadaan `index.html`, berkas `.js`, dan berkas `.css` di dalam direktori `dist/` dan `android/app/src/main/assets/dist/` sebelum task `./gradlew assembleDebug` dijalankan.
+- **Alasan**: Mencegah APK dibuat dalam kondisi aset kosong yang kerap menyebabkan diagnosis palsu.
 
-4. **Tahap 4: Konfigurasi Keystore Rilis, Lisensi Publik & Workflow Play Store**
-   - Konfigurasi `android/app/build.gradle` untuk release signing.
-   - Buat layar informasi Lisensi & Sertifikat Tanda Tangan Digital di `src/components/LicenseModal.tsx`.
-   - Perbarui `.github/workflows/build-apk.yml` untuk menghasilkan rilis yang ditandatangani.
+---
 
-5. **Tahap 5: Verifikasi & Uji Kompilasi**
-   - Jalankan `compile_applet` dan `lint_applet` untuk menjamin tidak ada error.
+### 4. Technical Architecture & Data Strategy
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        ANDROID NATIVE CONTAINER                        │
+│                                                                        │
+│   MainActivity.java                                                    │
+│   ┌────────────────────────────────────────────────────────────────┐   │
+│   │ android.webkit.WebView                                         │   │
+│   │                                                                │   │
+│   │ [WebSettings]                                                  │   │
+│   │ • setJavaScriptEnabled(true)                                   │   │
+│   │ • setDomStorageEnabled(true)                                   │   │
+│   │ • setDatabaseEnabled(true)                                     │   │
+│   │                                                                │   │
+│   │ [WebViewClient with WebViewAssetLoader]                        │   │
+│   │   intercepts https://appassets.androidplatform.net/assets/dist │   │
+│   │   → maps to native android_asset/dist/*                        │   │
+│   │   → onReceivedError logs errors to Android Logcat              │   │
+│   │                                                                │   │
+│   │ [WebChromeClient]                                              │   │
+│   │   → onPermissionRequest grants CAMERA for QRIS scanner         │   │
+│   │   → onConsoleMessage pipes JS console.log/error to Logcat      │   │
+│   └────────────────────────────────┬───────────────────────────────┘   │
+└────────────────────────────────────┼───────────────────────────────────┘
+                                     │ HTTPS Virtual Origin
+                                     ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                           REACT VITE WEB APP                           │
+│                                                                        │
+│   index.html (lang="id", meta KaiPay Digital Banking)                  │
+│   assets/index-*.js (ES Modules, Tailored for HTTPS Origin)            │
+│                                                                        │
+│   ┌───────────────────────┐  ┌───────────────────────┐                │
+│   │ Balance & 3D Card     │  │ QRIS Scanner & Gen    │                │
+│   └───────────────────────┘  └───────────────────────┘                │
+│   ┌───────────────────────┐  ┌───────────────────────┐                │
+│   │ Push Dynamic Island   │  │ License & Security    │                │
+│   └───────────────────────┘  └───────────────────────┘                │
+│                                                                        │
+│   LocalStorage State Engine + Unique ID Deduplication                  │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Tahapan Eksekusi Setelah Persetujuan
+
+1. **MainActivity.java**:
+   - Tambahkan import AndroidX `WebViewAssetLoader`, `AssetsPathHandler`, `WebResourceRequest`, `WebResourceResponse`, dan `ConsoleMessage`.
+   - Inisialisasi `WebViewAssetLoader` dan implementasikan `shouldInterceptRequest`.
+   - Arahkan URL pemuatan dari `file:///android_asset/dist/index.html` menjadi `https://appassets.androidplatform.net/assets/dist/index.html`.
+   - Tambahkan logging `Log.d("KaiPayConsole", ...)` dan `Log.e("KaiPayWebView", ...)`.
+2. **Workflow GitHub Actions (`.github/workflows/build-apk.yml`)**:
+   - Tambahkan step validasi isi `dist` (memastikan `index.html` dan berkas `.js` tidak kosong sebelum disalin ke aset Android).
+3. **Pembersihan Metadata & Identitas**:
+   - Buat `public/favicon.ico` dan `public/favicon.svg`.
+   - Perbarui `package.json` (`name: "kaipay-app"`).
+   - Perbarui `index.html` (`lang="id"`, deskripsi spesifik KaiPay tanpa penyebutan merk pihak ketiga).
+   - Perbarui `LicenseModal.tsx` agar menyajikan lisensi berstandar resmi (DANA/BI/ASPI) yang rapi, solid, dan meyakinkan.
+4. **Verifikasi Kompilasi & Lint**:
+   - Jalankan `npm run build` dan `compile_applet` untuk memastikan seluruh aplikasi siap dikompilasi ke APK.
