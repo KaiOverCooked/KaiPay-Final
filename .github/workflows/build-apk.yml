@@ -55,6 +55,25 @@ jobs:
           fi
           test -s gradle/wrapper/gradle-wrapper.jar
 
+      - name: Generate missing launcher icon resources for CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          ICON_DIR="android/app/src/main/res/mipmap-anydpi"
+          mkdir -p "$ICON_DIR"
+          cat > "$ICON_DIR/ic_launcher.xml" <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="48dp"
+              android:height="48dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#111827" android:pathData="M0,0h24v24h-24z"/>
+              <path android:fillColor="#FFFFFF" android:pathData="M5,4h3v7l7,-7h4l-7,8 7,8h-4l-7,-7v7h-3z"/>
+          </vector>
+          EOF
+          cp "$ICON_DIR/ic_launcher.xml" "$ICON_DIR/ic_launcher_round.xml"
+
       - name: Build debug APK
         run: ../gradlew assembleDebug --stacktrace
         working-directory: android
