@@ -28,8 +28,14 @@ jobs:
       - name: Install Node dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build web application
-        run: npm run build
+      - name: Build web application for Android file:// loading
+        run: |
+          npm run build -- --base=./
+          test -s dist/index.html
+          if grep -Eq '(src|href)="/assets/' dist/index.html; then
+            echo "Build still contains root-relative asset paths; WebView would show a blank screen."
+            exit 1
+          fi
 
       - name: Copy web assets into Android app
         run: |
